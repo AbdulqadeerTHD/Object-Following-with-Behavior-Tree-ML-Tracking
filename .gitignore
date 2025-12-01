@@ -31,3 +31,6 @@ Thumbs.db
 
 # Test files
 check_system.sh
+
+# Local instructions file (keep local only)
+instructions
