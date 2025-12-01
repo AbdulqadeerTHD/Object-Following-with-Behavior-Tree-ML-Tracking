@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>object_following_integration</name>
+  <version>0.1.0</version>
+  <description>Integration launch files for complete object following system</description>
+  <maintainer email="team@example.com">Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>object_following_vision</exec_depend>
+  <exec_depend>object_following_control</exec_depend>
+  <exec_depend>object_following_behavior</exec_depend>
+  <exec_depend>webots_robot_description</exec_depend>
+  <exec_depend>webots_ros2_turtlebot</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+
