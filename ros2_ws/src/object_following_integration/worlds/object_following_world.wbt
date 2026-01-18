@@ -65,13 +65,16 @@ TurtleBot3Burger {
   ]
 }
 
-# STEP 3 & 4: MOVING TARGET (BLUE BOX = PERSON) - HALF SIZE
-# Dimensions: Width (X): 0.075m, Depth (Z): 0.075m, Height (Y): 0.4m
-# Position: (1.5, 0.0, 0.2) where 0.2 = half of 0.4m height (on ground)
+# STEP 3: TARGET OBJECT (PERSON PROXY) - CLEAR BLUE VERTICAL BOX
+# This is THE TARGET that the robot must follow
+# Shape: Vertical rectangular box (standing upright like a person)
+# Color: Blue
+# Dimensions: Height: 1.6m, Width: 0.25m, Depth: 0.25m
+# Position: (1.5, 0.0, 0.8) where 0.8 = half of 1.6m height (on ground)
 DEF MOVING_TARGET Solid {
-  translation 1.5 0.0 0.2
+  translation 1.5 0.0 0.8
   rotation 0 0 1 0
-  name "moving_target"
+  name "TargetPerson"
   children [
     Shape {
       appearance PBRAppearance {
@@ -80,16 +83,16 @@ DEF MOVING_TARGET Solid {
         metalness 0.0
       }
       geometry Box {
-        size 0.075 0.4 0.075
+        size 0.25 1.6 0.25
       }
     }
   ]
   boundingObject Box {
-    size 0.075 0.4 0.075
+    size 0.25 1.6 0.25
   }
   physics Physics {
     density -1
-    mass 2.5
+    mass 10.0
   }
 }
 
@@ -116,14 +119,17 @@ Robot {
   }
 }
 
-# STEP 5: SMALLER OBJECTS ON THE GROUND - Various YOLOv8 detectable objects
+# STEP 5: OBSTACLES - Brown boxes only (for partial vision blocking)
+# These are obstacles, NOT targets
+# Layout: Boxes positioned around target (not in a line)
+# Smaller size: Height: 0.25m, Width: 0.15m (much smaller than before)
 # All objects placed on ground (Z = height/2)
 
-# Box 1 - HALF SIZE cardboard box (chair-like) - (0.7, 0.0, 0.075) Z = height/2 = 0.15/2
+# Obstacle Box 1 - Left of target - (0.8, -0.5, 0.125) Z = height/2 = 0.25/2
 Solid {
-  translation 0.7 0.0 0.075
+  translation 0.8 -0.5 0.125
   rotation 0 0 1 0
-  name "box_1"
+  name "obstacle_box_1"
   children [
     Shape {
       appearance PBRAppearance {
@@ -132,116 +138,12 @@ Solid {
         metalness 0.0
       }
       geometry Box {
-        size 0.1 0.15 0.1
+        size 0.15 0.25 0.15
       }
     }
   ]
   boundingObject Box {
-    size 0.1 0.15 0.1
-  }
-  physics Physics {
-    density -1
-    mass 0.5
-  }
-}
-
-# Box 2 - HALF SIZE box (backpack-like) - (0.8, 0.0, 0.05) Z = height/2 = 0.1/2
-Solid {
-  translation 0.8 0.0 0.05
-  rotation 0 0 1 0
-  name "box_2"
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0.3 0.5 0.8
-        roughness 0.8
-        metalness 0.0
-      }
-      geometry Box {
-        size 0.075 0.1 0.075
-      }
-    }
-  ]
-  boundingObject Box {
-    size 0.075 0.1 0.075
-  }
-  physics Physics {
-    density -1
-    mass 0.25
-  }
-}
-
-# Box 3 - HALF SIZE box (suitcase-like) - (1.0, 0.0, 0.05) Z = height/2 = 0.1/2
-Solid {
-  translation 1.0 0.0 0.05
-  rotation 0 0 1 0
-  name "box_3"
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0.8 0.6 0.4
-        roughness 0.8
-        metalness 0.0
-      }
-      geometry Box {
-        size 0.1 0.1 0.075
-      }
-    }
-  ]
-  boundingObject Box {
-    size 0.1 0.1 0.075
-  }
-  physics Physics {
-    density -1
-    mass 0.25
-  }
-}
-
-# Box 4 - HALF SIZE box - (1.2, 0.0, 0.05) Z = height/2 = 0.1/2
-Solid {
-  translation 1.2 0.0 0.05
-  rotation 0 0 1 0
-  name "box_4"
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0.6 0.4 0.2
-        roughness 0.8
-        metalness 0.0
-      }
-      geometry Box {
-        size 0.075 0.1 0.075
-      }
-    }
-  ]
-  boundingObject Box {
-    size 0.075 0.1 0.075
-  }
-  physics Physics {
-    density -1
-    mass 0.25
-  }
-}
-
-# Chair-like object HALF SIZE (YOLOv8 detects "chair") - (-0.5, 1.0, 0.1) Z = height/2 = 0.2/2
-Solid {
-  translation -0.5 1.0 0.1
-  rotation 0 0 1 0
-  name "chair_1"
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0.5 0.3 0.2
-        roughness 0.7
-        metalness 0.0
-      }
-      geometry Box {
-        size 0.125 0.2 0.125
-      }
-    }
-  ]
-  boundingObject Box {
-    size 0.125 0.2 0.125
+    size 0.15 0.25 0.15
   }
   physics Physics {
     density -1
@@ -249,73 +151,95 @@ Solid {
   }
 }
 
-# Bottle-like object HALF SIZE (YOLOv8 detects "bottle") - (2.0, 0.5, 0.05) Z = height/2 = 0.1/2
+# Obstacle Box 2 - Right of target - (2.2, -0.5, 0.125) Z = height/2 = 0.25/2
 Solid {
-  translation 2.0 0.5 0.05
+  translation 2.2 -0.5 0.125
   rotation 0 0 1 0
-  name "bottle_1"
+  name "obstacle_box_2"
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.2 0.8 0.2
-        roughness 0.6
-        metalness 0.3
+        baseColor 0.6 0.4 0.2
+        roughness 0.8
+        metalness 0.0
       }
-      geometry Cylinder {
-        radius 0.025
-        height 0.1
+      geometry Box {
+        size 0.15 0.25 0.15
       }
     }
   ]
-  boundingObject Cylinder {
-    radius 0.025
-    height 0.1
+  boundingObject Box {
+    size 0.15 0.25 0.15
   }
   physics Physics {
     density -1
-    mass 0.1
+    mass 1.0
   }
 }
 
-# Another bottle HALF SIZE - (2.0, -0.5, 0.05)
+# Obstacle Box 3 - Behind target (left side) - (1.2, 0.5, 0.125) Z = height/2 = 0.25/2
 Solid {
-  translation 2.0 -0.5 0.05
+  translation 1.2 0.5 0.125
   rotation 0 0 1 0
-  name "bottle_2"
+  name "obstacle_box_3"
   children [
     Shape {
       appearance PBRAppearance {
-        baseColor 0.8 0.2 0.2
-        roughness 0.6
-        metalness 0.3
+        baseColor 0.6 0.4 0.2
+        roughness 0.8
+        metalness 0.0
       }
-      geometry Cylinder {
-        radius 0.025
-        height 0.1
+      geometry Box {
+        size 0.15 0.25 0.15
       }
     }
   ]
-  boundingObject Cylinder {
-    radius 0.025
-    height 0.1
+  boundingObject Box {
+    size 0.15 0.25 0.15
   }
   physics Physics {
     density -1
-    mass 0.1
+    mass 1.0
   }
 }
 
-# STEP 6: HALF SIZE TABLE OBSTACLE (YOLOv8 detects "dining table")
-# Tabletop: 0.3m x 0.3m, Height: 0.2m, Leg width: 0.025m
-# Position: (-1.0, 0.0, 0.1) where 0.1 = height/2 (on ground)
+# Obstacle Box 4 - Behind target (right side) - (1.8, 0.5, 0.125) Z = height/2 = 0.25/2
 Solid {
-  translation -1.0 0.0 0.1
+  translation 1.8 0.5 0.125
   rotation 0 0 1 0
-  name "table"
+  name "obstacle_box_4"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.4 0.2
+        roughness 0.8
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.15 0.25 0.15
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.15 0.25 0.15
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+
+# STEP 6: TABLE OBSTACLE (Static obstacle, NOT a target)
+# Tabletop: 0.6m x 0.6m, Height: 0.4m, Leg width: 0.025m
+# Position: (-1.0, 0.0, 0.2) where 0.2 = height/2 (on ground)
+Solid {
+  translation -1.0 0.0 0.2
+  rotation 0 0 1 0
+  name "table_obstacle"
   children [
     # Tabletop
     Transform {
-      translation 0 0 0.1
+      translation 0 0 0.2
       children [
         Shape {
           appearance PBRAppearance {
@@ -324,14 +248,14 @@ Solid {
             metalness 0.0
           }
           geometry Box {
-            size 0.3 0.3 0.015
+            size 0.6 0.6 0.03
           }
         }
       ]
     }
     # Leg 1 (front left)
     Transform {
-      translation -0.135 -0.135 0.0425
+      translation -0.27 -0.27 0.085
       children [
         Shape {
           appearance PBRAppearance {
@@ -340,15 +264,15 @@ Solid {
             metalness 0.1
           }
           geometry Cylinder {
-            radius 0.0125
-            height 0.2
+            radius 0.025
+            height 0.4
           }
         }
       ]
     }
     # Leg 2 (front right)
     Transform {
-      translation 0.135 -0.135 0.0425
+      translation 0.27 -0.27 0.085
       children [
         Shape {
           appearance PBRAppearance {
@@ -357,15 +281,15 @@ Solid {
             metalness 0.1
           }
           geometry Cylinder {
-            radius 0.0125
-            height 0.2
+            radius 0.025
+            height 0.4
           }
         }
       ]
     }
     # Leg 3 (back left)
     Transform {
-      translation -0.135 0.135 0.0425
+      translation -0.27 0.27 0.085
       children [
         Shape {
           appearance PBRAppearance {
@@ -374,15 +298,15 @@ Solid {
             metalness 0.1
           }
           geometry Cylinder {
-            radius 0.0125
-            height 0.2
+            radius 0.025
+            height 0.4
           }
         }
       ]
     }
     # Leg 4 (back right)
     Transform {
-      translation 0.135 0.135 0.0425
+      translation 0.27 0.27 0.085
       children [
         Shape {
           appearance PBRAppearance {
@@ -391,19 +315,19 @@ Solid {
             metalness 0.1
           }
           geometry Cylinder {
-            radius 0.0125
-            height 0.2
+            radius 0.025
+            height 0.4
           }
         }
       ]
     }
   ]
   boundingObject Box {
-    size 0.3 0.3 0.215
+    size 0.6 0.6 0.43
   }
   physics Physics {
     density -1
-    mass 5.0
+    mass 10.0
   }
 }
 

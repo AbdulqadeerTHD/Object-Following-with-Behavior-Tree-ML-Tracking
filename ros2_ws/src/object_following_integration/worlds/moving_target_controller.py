@@ -12,22 +12,25 @@ import time
 robot = Supervisor()
 timestep = int(robot.getBasicTimeStep())
 
-# Get the moving target node
+# Get the moving target node - try by DEF name first, then by name
 target_node = robot.getFromDef("MOVING_TARGET")
 if target_node is None:
-    # Try by name
+    # Try by name "TargetPerson"
     root = robot.getRoot()
     children = root.getField("children")
     for i in range(children.getCount()):
         child = children.getMFNode(i)
         if child.getTypeName() == "Solid":
             name_field = child.getField("name")
-            if name_field and name_field.getSFString() == "moving_target":
-                target_node = child
-                break
+            if name_field:
+                name = name_field.getSFString()
+                if name == "TargetPerson" or name == "moving_target":
+                    target_node = child
+                    print(f"Found target by name: {name}")
+                    break
 
 if target_node is None:
-    print("ERROR: Could not find moving_target node!")
+    print("ERROR: Could not find MOVING_TARGET or TargetPerson node!")
     robot.simulationQuit(1)
     exit(1)
 
@@ -76,8 +79,8 @@ while robot.step(timestep) != -1:
         pause_time = pause_duration
         print(f"Reached backward position: {current_x}, pausing 2s then going forward...")
     
-    # Update position (keep Y=0.0, Z=0.2 - on ground, height/2 for half-size target)
-    translation_field.setSFVec3f([current_x, 0.0, 0.2])
+    # Update position (keep Y=0.0, Z=0.8 - on ground, height/2 = 1.6/2 = 0.8)
+    translation_field.setSFVec3f([current_x, 0.0, 0.8])
 
 print("Moving Target Controller: Exiting...")
 

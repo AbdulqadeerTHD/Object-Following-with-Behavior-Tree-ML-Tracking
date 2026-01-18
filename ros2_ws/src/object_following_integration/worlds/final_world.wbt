@@ -1,0 +1,348 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/devices/robotis/protos/RobotisLds01.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/develop/projects/appearances/protos/CementTiles.proto"
+
+WorldInfo {
+  info [
+    "TurtleBot3 Burger with Camera - Test Environment"
+  ]
+  title "TurtleBot3 Burger with Camera - Test Objects + Moving Pedestrians"
+  basicTimeStep 20
+}
+
+# Supervisor to automatically enable camera
+DEF CAMERA_ENABLER Robot {
+  controller "camera_enabler"
+  supervisor TRUE
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0 0
+      }
+      geometry Box {
+        size 0.01 0.01 0.01
+      }
+    }
+  ]
+  name "Ros2Supervisor"
+  boundingObject Box {
+    size 0.01 0.01 0.01
+  }
+}
+
+Viewpoint {
+  orientation -0.2878951570967451 -0.16506369377382343 0.9433293992651676 4.177335774513749
+  position 2 2 2
+  follow "TurtleBot3Burger"
+}
+
+TexturedBackground {
+  texture "empty_office"
+  skybox FALSE
+}
+
+Floor {
+  translation 0 0 0
+  name "floor"
+  size 10 10
+  tileSize 2 2
+  appearance CementTiles {
+    textureTransform TextureTransform {
+      scale 0.6 0.6
+    }
+  }
+}
+
+# TurtleBot3 Burger Robot - Current Configuration
+# Position: At origin (0, 0, 0), facing +X direction
+# Equipped with: Camera, LiDAR, IMU, GPS
+TurtleBot3Burger {
+  translation 0.0 0.0 0.0
+  rotation 0 1 0 0
+  controller "<extern>"
+  controllerArgs [
+    ""
+  ]
+  extensionSlot [
+    Solid {
+      name "imu_link"
+    }
+    GPS {
+    }
+    InertialUnit {
+      name "inertial_unit"
+    }
+    RobotisLds01 {
+    }
+    Camera {
+      translation 0.1 0 0.1
+      rotation 0 0 1 0
+      name "camera"
+      fieldOfView 1.047
+      width 640
+      height 480
+      near 0.01
+      far 10
+    }
+  ]
+}
+
+# ---------------------------------------------------------------------------
+# Static objects for YOLOv8 detection (chairs, boxes, solids)
+# ---------------------------------------------------------------------------
+
+# Simple box as "chair" - placed 2m in front
+Solid {
+  translation 2.0 0.0 0.3
+  rotation 0 0 1 0
+  name "target_chair_1"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.4 0.2
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.4 0.4 0.6
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.4 0.4 0.6
+  }
+  physics Physics {
+    density -1
+    mass 5.0
+  }
+}
+
+# Another simple box - placed 2m to the right
+Solid {
+  translation 1.5 1.5 0.3
+  rotation 0 0 1 0.5
+  name "target_chair_2"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.3 0.5 0.8
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.35 0.35 0.5
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.35 0.35 0.5
+  }
+  physics Physics {
+    density -1
+    mass 4.0
+  }
+}
+
+# Small table - simple box shape
+Solid {
+  translation 0.0 2.0 0.25
+  rotation 0 0 1 0
+  name "target_table"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.3 0.2
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.5 0.4 0.3
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.5 0.4 0.3
+  }
+  physics Physics {
+    density -1
+    mass 3.0
+  }
+}
+
+# Another simple box - placed 2m to the left
+Solid {
+  translation -1.5 1.5 0.3
+  rotation 0 0 1 -0.5
+  name "target_chair_3"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.2 0.3
+        roughness 0.7
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.35 0.35 0.5
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.35 0.35 0.5
+  }
+  physics Physics {
+    density -1
+    mass 4.0
+  }
+}
+
+# Box object (for explicit "box" detections)
+Solid {
+  translation -2.0 -1.0 0.25
+  rotation 0 0 1 0.2
+  name "target_box_1"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.6 0.2
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.5 0.5 0.5
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.5 0.5 0.5
+  }
+  physics Physics {
+    density -1
+    mass 4.0
+  }
+}
+
+# Cylindrical solid (for general obstacle / "trash can" type)
+Solid {
+  translation 1.0 -1.5 0.4
+  rotation 0 0 1 0
+  name "target_cylinder_1"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.7 0.7 0.2
+        roughness 0.5
+        metalness 0.0
+      }
+      geometry Cylinder {
+        radius 0.25
+        height 0.8
+      }
+    }
+  ]
+  boundingObject Cylinder {
+    radius 0.25
+    height 0.8
+  }
+  physics Physics {
+    density -1
+    mass 3.0
+  }
+}
+
+# ---------------------------------------------------------------------------
+# Simple moving "pedestrian" robots (for tracking/following)
+# ---------------------------------------------------------------------------
+# Each pedestrian is a tiny mobile Robot; supply a controller named
+# "pedestrian_controller" to move them (e.g., sinusoidal or back-and-forth path).
+
+Robot {
+  translation 0.0 -2.0 0.0
+  rotation 0 0 1 1.57
+  name "pedestrian_1"
+  controller "pedestrian_controller"
+  children [
+    # body
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.8 0.2
+        roughness 0.5
+        metalness 0.0
+      }
+      geometry Cylinder {
+        radius 0.15
+        height 1.2
+      }
+    }
+    # head
+    Transform {
+      translation 0 0 0.75
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.9 0.6 0.4
+            roughness 0.7
+            metalness 0.0
+          }
+          geometry Sphere {
+            radius 0.15
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Cylinder {
+    radius 0.15
+    height 1.2
+  }
+  physics Physics {
+    density -1
+    mass 70.0
+  }
+}
+
+Robot {
+  translation -2.0 0.0 0.0
+  rotation 0 0 1 0
+  name "pedestrian_2"
+  controller "pedestrian_controller"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.4 0.9
+        roughness 0.5
+        metalness 0.0
+      }
+      geometry Cylinder {
+        radius 0.15
+        height 1.2
+      }
+    }
+    Transform {
+      translation 0 0 0.75
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.9 0.6 0.4
+            roughness 0.7
+            metalness 0.0
+          }
+          geometry Sphere {
+            radius 0.15
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Cylinder {
+    radius 0.15
+    height 1.2
+  }
+  physics Physics {
+    density -1
+    mass 70.0
+  }
+}

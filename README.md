@@ -50,34 +50,55 @@ The system consists of four main components:
 
 ## Running the System
 
-### Launch the complete system with new environment:
+### Launch the complete system with moving world environment:
 
 ```bash
 cd ~/Documents/Path_Following_Robot/ros2_ws
 source install/setup.bash
-ros2 launch object_following_integration launch_object_following_world.launch.py \
-    target_class_name:=all \
-    confidence_threshold:=0.15
+ros2 launch object_following_integration launch_moving_world.launch.py target_class_name:=person confidence_threshold:=0.2
 ```
 
 ### Parameters:
 
 - `camera_topic`: Camera topic name (default: `/camera/image_raw`)
-- `target_class_name`: Target object class to detect - `all`, `chair`, `person`, `bottle`, etc. (default: `all`)
+- `target_class_name`: Target object class to detect - `all`, `chair`, `person`, `bottle`, etc. (default: `person`)
   - Use `all` to detect all COCO classes that YOLOv8 can recognize
+  - Use `person` for the moving world environment (recommended)
 - `confidence_threshold`: YOLOv8 confidence threshold 0.0-1.0 (default: `0.2`)
 
 ### Example: Detect specific class
 
 ```bash
+ros2 launch object_following_integration launch_moving_world.launch.py \
+    target_class_name:=person \
+    confidence_threshold:=0.2
+```
+
+### Alternative: Launch with original world
+
+```bash
 ros2 launch object_following_integration launch_object_following_world.launch.py \
-    target_class_name:=chair \
-    confidence_threshold:=0.3
+    target_class_name:=all \
+    confidence_threshold:=0.15
 ```
 
 ## World Environment
 
+### Moving World (`moving_world.wbt`) - **Recommended**
+
 The simulation includes:
+- **TurtleBot3 Burger** robot with camera and LiDAR at origin (0, 0, 0)
+- **Moving Pedestrians** (2 pedestrians with random walk behavior)
+- **Maze blocks** as obstacles arranged throughout the environment
+- **Office chairs** and **tables** as additional obstacles
+- **15x15 meter arena** with textured background
+- **All objects on ground level** with realistic sizes
+
+The pedestrians move randomly within the arena boundaries using the `person_mover` controller.
+
+### Original World (`object_following_world.wbt`)
+
+Alternative environment with:
 - **TurtleBot3 Burger** robot with camera and LiDAR
 - **Moving blue target** (automatically moves back and forth)
 - **Multiple objects**: boxes, chairs, bottles, table
@@ -158,13 +179,21 @@ ros2_ws/src/
 │   └── CMakeLists.txt
 └── object_following_integration/      # Launch files and world
     ├── launch/
-    │   ├── launch_object_following_world.launch.py  # New world launch file
-    │   └── launch_with_camera_world.launch.py       # Original launch file
+    │   ├── launch_moving_world.launch.py            # Moving world launch file (recommended)
+    │   ├── launch_object_following_world.launch.py   # Original world launch file
+    │   ├── launch_final_world.launch.py             # Final world launch file
+    │   └── launch_with_camera_world.launch.py       # Legacy launch file
     ├── worlds/
-    │   ├── object_following_world.wbt               # New environment
-    │   ├── turtlebot3_simple_with_camera.wbt        # Original world
-    │   ├── moving_target_controller.py              # Target movement controller
+    │   ├── moving_world.wbt                         # Moving world with pedestrians (recommended)
+    │   ├── final_world.wbt                           # Final world environment
+    │   ├── object_following_world.wbt               # Original environment
+    │   ├── turtlebot3_simple_with_camera.wbt        # Simple test world
+    │   ├── protos/                                   # Pedestrian PROTO files
+    │   │   ├── Pedestrian.proto
+    │   │   └── [15 dependency PROTO files]
     │   └── controllers/
+    │       ├── person_mover/                        # Pedestrian movement controller
+    │       │   └── person_mover.py
     │       └── moving_target_controller/
     │           └── moving_target_controller.py
     ├── resource/
@@ -191,10 +220,12 @@ ros2_ws/src/
    - Obstacle avoidance with 0.30m threshold
    - Smooth motion control
 5. **World Environment**: 
+   - **Moving World**: Pedestrians with random walk behavior
    - Correctly scaled objects (half-size for better detection)
    - All objects on ground level
-   - Moving target with automatic motion
-   - Multiple detectable objects (chairs, bottles, table, boxes)
+   - Moving targets with automatic motion
+   - Multiple detectable objects (chairs, bottles, table, boxes, persons)
+   - Pedestrian PROTO files included and properly configured
 
 ## Troubleshooting
 
@@ -216,8 +247,13 @@ ros2_ws/src/
 
 ### Webots warnings:
 - **Version compatibility warnings**: Safe to ignore (forward compatibility works)
-- **Controller directory warning**: Target won't move automatically, but robot works
+- **Pedestrian PROTO errors**: If you see Pedestrian PROTO errors, ensure the `protos/` directory is installed correctly. Rebuild the package if needed.
 - **BallJoint warning**: Safe to ignore (URDF export limitation)
+
+### Pedestrians not moving:
+1. Check that `person_mover` controller is installed: `ls ros2_ws/install/object_following_integration/share/object_following_integration/worlds/controllers/person_mover/`
+2. Rebuild the package: `colcon build --packages-select object_following_integration`
+3. Verify the world file references the correct controller name
 
 ## License
 

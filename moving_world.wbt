@@ -1,0 +1,310 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/humans/pedestrian/protos/Pedestrian.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/samples/robotbenchmark/maze_runner/protos/MazeBlock.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/OfficeChair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/robotis/protos/RobotisLds01.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  fieldOfView 0.9
+  orientation -0.193960025622898 -0.00927081588841963 0.9809656265298635 3.0847736689828795
+  position 11.937624304748331 -0.3540188077840958 6.192415537374312
+}
+TexturedBackground {
+  texture "factory"
+}
+TexturedBackgroundLight {
+  texture "factory"
+}
+RectangleArena {
+  floorSize 15 15
+  floorAppearance Parquetry {
+    type "dark strip"
+  }
+  wallHeight 1.4
+}
+TurtleBot3Burger {
+  translation 0.0 0.0 0.0
+  rotation 0 1 0 0
+  controller "<extern>"
+  controllerArgs [
+    ""
+  ]
+  extensionSlot [
+    Solid {
+      name "imu_link"
+    }
+    GPS {
+    }
+    InertialUnit {
+      name "inertial_unit"
+    }
+    RobotisLds01 {
+    }
+    Camera {
+      translation 0.1 0 0.1
+      rotation 0 0 1 0
+      name "camera"
+      fieldOfView 1.047
+      width 640
+      height 480
+      near 0.01
+      far 10
+    }
+  ]
+}
+Pedestrian {
+  translation 3.16999 2.91 1.37
+  rotation 0 0 1 1.5708
+  name "pedestrian(1)"
+  controller "person_mover"
+  controllerArgs [
+    ""
+  ]
+  shirtColor 0.83 1 0.2
+}
+MazeBlock {
+  translation 3.36 3.65 0.01
+  name "maze block(6)"
+  length 2.1
+}
+MazeBlock {
+  translation 4.4 4.71 0.01
+  rotation 0 0 1 1.5708
+  name "maze block(7)"
+  length 2.1
+}
+OfficeChair {
+  translation 4.19 3.1 0
+  rotation 0 0 1 3.14159
+}
+MazeBlock {
+  translation -0.549998 5.18 0.04
+  rotation 0 0 -1 -5.307179586466759e-06
+  name "maze block(4)"
+  length 1
+}
+MazeBlock {
+  translation 3.37 5.22 0.04
+  rotation 0 0 -1 -5.307179586466759e-06
+  name "maze block(8)"
+  length 1
+}
+MazeBlock {
+  translation 0.960002 5.68 0.01
+  rotation 0 0 1 1.5708
+  name "maze block(5)"
+  length 3
+}
+MazeBlock {
+  translation -1.06 4.66 0.01
+  rotation 0 0 1 1.5708
+  name "maze block(3)"
+  length 1
+}
+MazeBlock {
+  translation -1.57 6.07 0.01
+  name "maze block(2)"
+  length 2.8
+}
+MazeBlock {
+  translation -1.55 3.54 0.01
+  rotation 0 0 1 1.5708
+  name "maze block(1)"
+  length 1.8
+}
+MazeBlock {
+  translation 0 3.65 0.01
+  length 2.1
+}
+Solid {
+  translation -2.71 5.48 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.3 0.2
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 4 0.3
+      }
+    }
+  ]
+  name "target_table(2)"
+  boundingObject Box {
+    size 0.5 0.4 0.3
+  }
+  physics Physics {
+    density -1
+    mass 3
+  }
+}
+Solid {
+  translation 5.24 6.15 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.3 0.2
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.4 0.3
+      }
+    }
+  ]
+  name "target_table(3)"
+  boundingObject Box {
+    size 0.5 0.4 0.3
+  }
+  physics Physics {
+    density -1
+    mass 3
+  }
+}
+Solid {
+  translation 2.51 2.43 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.3 0.2
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 10 0.4 0.3
+      }
+    }
+  ]
+  name "target_table(1)"
+  boundingObject Box {
+    size 0.5 0.4 0.3
+  }
+  physics Physics {
+    density -1
+    mass 3
+  }
+}
+Pedestrian {
+  translation -6.79 0 1.27
+  controller "person_mover"
+  controllerArgs [
+    ""
+  ]
+  shirtColor 0.86 1 1
+}
+Pose {
+  translation 0 -1.68 0.18
+  children [
+    Shape {
+      appearance Appearance {
+      }
+      geometry Cone {
+        bottomRadius 0.05
+        height 0.1
+      }
+    }
+  ]
+}
+Solid {
+  translation 2 0 0.3
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.4 0.2
+        roughness 0.7
+        metalness 0
+      }
+      geometry Box {
+        size 0.4 0.4 0.6
+      }
+    }
+  ]
+  name "target_chair_1"
+  boundingObject Box {
+    size 0.4 0.4 0.6
+  }
+  physics Physics {
+    density -1
+    mass 5
+  }
+}
+Solid {
+  translation -0.987284 6.73087 0.3
+  rotation 0 0 1 -0.023595307179586023
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.3 0.5 0.8
+        roughness 0.7
+        metalness 0
+      }
+      geometry Box {
+        size 0.35 0.35 0.5
+      }
+    }
+  ]
+  name "target_chair_2"
+  boundingObject Box {
+    size 0.35 0.35 0.5
+  }
+  physics Physics {
+    density -1
+    mass 4
+  }
+}
+Solid {
+  translation 0 -0.4 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.5 0.3 0.2
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.4 0.3
+      }
+    }
+  ]
+  name "target_table"
+  boundingObject Box {
+    size 0.5 0.4 0.3
+  }
+  physics Physics {
+    density -1
+    mass 3
+  }
+}
+Solid {
+  translation 0.845739 5.29 0.3
+  rotation 0 0 -1 -0.023595307179586023
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.8 0.2 0.3
+        roughness 0.7
+        metalness 0
+      }
+      geometry Box {
+        size 0.35 0.35 0.5
+      }
+    }
+  ]
+  name "target_chair_3"
+  boundingObject Box {
+    size 0.35 0.35 0.5
+  }
+  physics Physics {
+    density -1
+    mass 4
+  }
+}
