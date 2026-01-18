@@ -1,5 +1,5 @@
 """
-Launch file for object_following_world.wbt - The new correctly scaled environment
+Launch file for moving_world.wbt - Uses the exact moving_world environment with current robot
 """
 import os
 from launch import LaunchDescription
@@ -29,7 +29,7 @@ def generate_launch_description():
     target_class_arg = DeclareLaunchArgument(
         'target_class_name',
         default_value='person',
-        description='Target object class to detect (person, chair, bottle, all, etc.) - Default: person (blue vertical box)'
+        description='Target object class to detect (person, chair, bottle, all, etc.) - Default: person'
     )
     
     confidence_threshold_arg = DeclareLaunchArgument(
@@ -38,10 +38,10 @@ def generate_launch_description():
         description='YOLOv8 confidence threshold (0.0 to 1.0)'
     )
     
-    # Get world file path - NEW WORLD FILE
-    world_file = os.path.join(integration_package_dir, 'worlds', 'object_following_world.wbt')
+    # Get world file path - MOVING WORLD FILE (exact environment)
+    world_file = os.path.join(integration_package_dir, 'worlds', 'moving_world.wbt')
     
-    # Launch Webots with new world
+    # Launch Webots with moving world
     webots = WebotsLauncher(
         world=world_file,
         mode='realtime',
@@ -159,7 +159,7 @@ def generate_launch_description():
             'max_linear_vel': 0.3,
             'max_angular_vel': 1.0,
             'target_distance': 0.5,
-            'obstacle_threshold': 0.4,
+            'obstacle_threshold': 0.30,
         }]
     )
     
@@ -183,4 +183,5 @@ def generate_launch_description():
             )
         ),
     ])
+
 

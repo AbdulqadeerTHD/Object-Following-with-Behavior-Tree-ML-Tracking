@@ -18,7 +18,7 @@ install(DIRECTORY resource
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Install world files (including controllers subdirectory)
+# Install world files (including controllers subdirectory and protos)
 install(DIRECTORY worlds
   DESTINATION share/${PROJECT_NAME}
 )
