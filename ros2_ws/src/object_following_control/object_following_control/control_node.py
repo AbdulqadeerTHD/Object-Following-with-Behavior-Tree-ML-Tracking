@@ -78,7 +78,7 @@ class ControlNode(Node):
         self.declare_parameter('max_angular_vel', 1.0)
         self.declare_parameter('target_distance', 0.5)  # Target distance in meters (based on y_size)
         self.declare_parameter('min_distance', 0.3)  # Minimum safe distance
-        self.declare_parameter('obstacle_threshold', 0.4)  # LiDAR obstacle threshold in meters
+        self.declare_parameter('obstacle_threshold', 0.30)  # LiDAR obstacle threshold in meters (per spec: 0.30m)
         
         # PID parameters for angular control (centering)
         self.declare_parameter('angular_kp', 1.5)
@@ -229,12 +229,13 @@ class ControlNode(Node):
         min_left = np.min(left_valid) if len(left_valid) > 0 else float('inf')
         min_right = np.min(right_valid) if len(right_valid) > 0 else float('inf')
         
-        # Check for obstacles
-        if min_front < self.obstacle_threshold:
+        # Check for obstacles (per spec: 0.30m threshold)
+        # Per spec: SAFETY RULE - IF any scan distance < 0.30 m
+        if min_front < 0.30:
             return True, 'front'
-        elif min_left < self.obstacle_threshold:
+        elif min_left < 0.30:
             return True, 'left'
-        elif min_right < self.obstacle_threshold:
+        elif min_right < 0.30:
             return True, 'right'
         
         return False, None
@@ -257,65 +258,61 @@ class ControlNode(Node):
         has_obstacle, obstacle_dir = self.check_obstacle()
         
         if has_obstacle:
-            # Per spec: If any reading < 0.3m → STOP or slight turn
+            # Per spec: SAFETY RULE - If any scan distance < 0.30 m → override all behavior
+            # OVERRIDE BEHAVIOR: linear.x = 0.0, angular.z = 0.0 OR small turn away
             cmd_vel.linear.x = 0.0  # STOP
             if obstacle_dir == 'front':
                 # Slight turn away from obstacle
                 if self.latest_lidar_scan:
                     ranges = np.array(self.latest_lidar_scan.ranges)
                     num_ranges = len(ranges)
-                    left_avg = np.mean(ranges[int(num_ranges * 0.7):][np.isfinite(ranges[int(num_ranges * 0.7):])])
-                    right_avg = np.mean(ranges[:int(num_ranges * 0.3)][np.isfinite(ranges[:int(num_ranges * 0.3)])])
-                    if left_avg > right_avg:
-                        cmd_vel.angular.z = -0.3  # Slight turn right
+                    left_ranges = ranges[int(num_ranges * 0.7):]
+                    right_ranges = ranges[:int(num_ranges * 0.3)]
+                    left_valid = left_ranges[np.isfinite(left_ranges)]
+                    right_valid = right_ranges[np.isfinite(right_ranges)]
+                    if len(left_valid) > 0 and len(right_valid) > 0:
+                        left_avg = np.mean(left_valid)
+                        right_avg = np.mean(right_valid)
+                        if left_avg > right_avg:
+                            cmd_vel.angular.z = -0.2  # Slight turn right
+                        else:
+                            cmd_vel.angular.z = 0.2   # Slight turn left
                     else:
-                        cmd_vel.angular.z = 0.3   # Slight turn left
+                        cmd_vel.angular.z = 0.0  # Stop if can't determine direction
             elif obstacle_dir == 'left':
-                cmd_vel.angular.z = -0.3  # Turn right
+                cmd_vel.angular.z = -0.2  # Turn right
             elif obstacle_dir == 'right':
-                cmd_vel.angular.z = 0.3   # Turn left
+                cmd_vel.angular.z = 0.2   # Turn left
+            else:
+                cmd_vel.angular.z = 0.0  # Stop
         else:
             # Behavior tree based control (per spec: only FOLLOW and SEARCH)
             if self.current_behavior_state == "FOLLOW":
-                # FOLLOW MODE: Per spec - simple control logic (non-PID)
+                # FOLLOW MODE: Per spec - exact control logic
                 if self.latest_object_position is not None and self.latest_object_position.found:
                     # Get normalized x position (0.0 to 1.0)
                     target_x = self.latest_object_position.x
                     
-                    # Per spec: Simple control logic
+                    # Per spec: FOLLOW LOGIC (MANDATORY RULES)
+                    # TURNING RULES
                     if target_x < 0.4:
                         # Turn left
                         cmd_vel.linear.x = 0.0
-                        cmd_vel.angular.z = 0.3
+                        # Angular proportional to (x - 0.5) per spec
+                        cmd_vel.angular.z = 0.3 * (0.5 - target_x) / 0.5  # Scale to max 0.3
                     elif target_x > 0.6:
                         # Turn right
                         cmd_vel.linear.x = 0.0
-                        cmd_vel.angular.z = -0.3
+                        # Angular proportional to (x - 0.5) per spec
+                        cmd_vel.angular.z = -0.3 * (target_x - 0.5) / 0.5  # Scale to max 0.3
                     else:
-                        # 0.4 <= target_x <= 0.6 → go forward
-                        # Adjust speed based on distance (closer = slower)
-                        if hasattr(self.latest_object_position, 'distance') and self.latest_object_position.distance > 0:
-                            # Use distance estimate if available
-                            if self.latest_object_position.distance < 0.3:
-                                cmd_vel.linear.x = 0.0  # Stop if too close
-                            elif self.latest_object_position.distance < 0.5:
-                                cmd_vel.linear.x = 0.1  # Slow if close
-                            else:
-                                cmd_vel.linear.x = self.max_linear_vel  # Normal speed
-                        else:
-                            # Fallback: use distance estimate (smaller distance = closer)
-                            if hasattr(self.latest_object_position, 'distance') and self.latest_object_position.distance > 0:
-                                if self.latest_object_position.distance < 0.3:
-                                    cmd_vel.linear.x = 0.0  # Stop if too close
-                                elif self.latest_object_position.distance < 0.5:
-                                    cmd_vel.linear.x = 0.1  # Slow if close
-                                else:
-                                    cmd_vel.linear.x = self.max_linear_vel  # Normal speed
-                            else:
-                                cmd_vel.linear.x = self.max_linear_vel  # Default forward
-                        cmd_vel.angular.z = 0.0
+                        # FORWARD MOTION RULES: 0.4 <= x <= 0.6 → move forward
+                        # Per spec: linear.x = 0.15 m/s
+                        cmd_vel.linear.x = 0.15
+                        # Angular proportional to (x - 0.5) per spec (for fine centering)
+                        cmd_vel.angular.z = -0.3 * (target_x - 0.5) / 0.1  # Scale to max 0.3 when at edges
                 else:
-                    # Object lost during FOLLOW - stop
+                    # Object lost during FOLLOW - stop (wait for SEARCH mode)
                     cmd_vel.linear.x = 0.0
                     cmd_vel.angular.z = 0.0
             

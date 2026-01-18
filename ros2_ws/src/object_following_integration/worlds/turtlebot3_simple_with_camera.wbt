@@ -13,25 +13,6 @@ WorldInfo {
   title "TurtleBot3 Burger with Camera - Test Objects"
   basicTimeStep 20
 }
-# Supervisor to automatically enable camera
-DEF CAMERA_ENABLER Robot {
-  controller "camera_enabler"
-  supervisor TRUE
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 0 0 0
-      }
-      geometry Box {
-        size 0.01 0.01 0.01
-      }
-    }
-  ]
-  name "Ros2Supervisor"
-  boundingObject Box {
-    size 0.01 0.01 0.01
-  }
-}
 Viewpoint {
   orientation -0.2878951570967451 -0.16506369377382343 0.9433293992651676 4.177335774513749
   position 2 2 2

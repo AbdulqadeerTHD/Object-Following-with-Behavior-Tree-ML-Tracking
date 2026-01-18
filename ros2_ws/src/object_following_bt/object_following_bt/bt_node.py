@@ -70,6 +70,10 @@ class BehaviorTreeNode(Node):
         # Current object position (from vision node)
         self.current_object_position = None
         
+        # State management (per spec: 1.5s delay before switching to SEARCH)
+        self.object_lost_time = None  # Time when object was lost
+        self.search_delay = 1.5  # Seconds to wait before switching to SEARCH (per spec)
+        
         # Create subscriber for object position
         self.object_sub = self.create_subscription(
             ObjectPosition,
@@ -91,7 +95,7 @@ class BehaviorTreeNode(Node):
         self.search_action = SearchAction(self)
         
         # Current state
-        self.current_state = "SEARCH"  # Start in SEARCH mode
+        self.current_state = "SEARCH"  # Start in SEARCH mode (per spec)
         
         # Behavior tree execution timer (10 Hz)
         self.bt_timer = self.create_timer(0.1, self.execute_behavior_tree)
@@ -113,12 +117,20 @@ class BehaviorTreeNode(Node):
     
     def execute_behavior_tree(self):
         """
-        Execute Behavior Tree logic:
+        Execute Behavior Tree logic (per spec):
         
-        ROOT
-        ├── CheckObjectVisible
-        │   ├── SUCCESS → FOLLOW
-        │   └── FAILURE → SEARCH
+        RULE 1 — FOLLOW MODE
+        IF object_position.found == true
+        THEN behavior_state = "FOLLOW"
+        
+        RULE 2 — SEARCH MODE
+        IF object_position.found == false
+        FOR longer than 1.5 seconds
+        THEN behavior_state = "SEARCH"
+        
+        RULE 3 — STATE STABILITY
+        Do NOT switch states rapidly.
+        Use a small timer/debounce to prevent flickering.
         """
         # Update condition with current object position
         self.check_visible.object_position_msg = self.current_object_position
@@ -126,21 +138,42 @@ class BehaviorTreeNode(Node):
         # Execute CheckObjectVisible condition
         condition_result = self.check_visible.tick()
         
+        current_time = self.get_clock().now()
+        
         # Execute appropriate action based on condition
         if condition_result == "SUCCESS":
-            # Object is visible → FOLLOW mode
+            # RULE 1: Object is visible → FOLLOW mode (immediate switch)
             if self.current_state != "FOLLOW":
                 self.get_logger().info('Object detected → Switching to FOLLOW mode')
                 self.current_state = "FOLLOW"
+                self.object_lost_time = None  # Reset lost timer
             self.follow_action.tick()
             self.publish_state("FOLLOW")
         else:
-            # Object not visible → SEARCH mode
-            if self.current_state != "SEARCH":
-                self.get_logger().info('Object lost → Switching to SEARCH mode')
-                self.current_state = "SEARCH"
-            self.search_action.tick()
-            self.publish_state("SEARCH")
+            # RULE 2: Object not visible → check if we should switch to SEARCH
+            if self.current_state == "FOLLOW":
+                # Object was just lost - start timer
+                if self.object_lost_time is None:
+                    self.object_lost_time = current_time
+                    self.get_logger().info('Object lost - starting 1.5s timer before SEARCH mode')
+                
+                # Check if 1.5 seconds have passed
+                time_since_lost = (current_time - self.object_lost_time).nanoseconds / 1e9
+                if time_since_lost >= self.search_delay:
+                    # RULE 2: 1.5 seconds passed → switch to SEARCH
+                    self.get_logger().info(f'Object lost for {time_since_lost:.1f}s → Switching to SEARCH mode')
+                    self.current_state = "SEARCH"
+                    self.object_lost_time = None
+                    self.search_action.tick()
+                    self.publish_state("SEARCH")
+                else:
+                    # Still in FOLLOW mode, waiting for delay
+                    # Keep publishing FOLLOW state
+                    self.publish_state("FOLLOW")
+            else:
+                # Already in SEARCH mode
+                self.search_action.tick()
+                self.publish_state("SEARCH")
     
     def publish_state(self, state):
         """Publish behavior state to /behavior_state topic"""

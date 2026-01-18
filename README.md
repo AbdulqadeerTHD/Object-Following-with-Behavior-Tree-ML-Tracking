@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project implements an AI-based object following robot using ROS2, YOLOv8 + DeepSORT, Behavior Trees, and PID control. The robot can detect, track, and follow target objects (chairs, persons, or boxes) in a Webots simulation environment.
+This project implements an AI-based object following robot using ROS2, YOLOv8 + DeepSORT, Behavior Trees, and PID control. The robot can detect, track, and follow target objects in a Webots simulation environment. The system supports detecting **all COCO classes** that YOLOv8 can recognize, including chairs, persons, bottles, tables, and more.
 
 ## Architecture
 
@@ -10,7 +10,7 @@ The system consists of four main components:
 
 1. **Vision Node** (`object_following_vision`): YOLOv8 object detection + DeepSORT tracking
 2. **Behavior Tree Node** (`object_following_bt`): High-level decision making (SEARCH/FOLLOW states)
-3. **Control Node** (`object_following_control`): PID-based motion control with obstacle avoidance
+3. **Control Node** (`object_following_control`): Motion control with obstacle avoidance
 4. **Integration Package** (`object_following_integration`): Launch files and Webots world configuration
 
 ## System Topics
@@ -24,7 +24,7 @@ The system consists of four main components:
 ## Prerequisites
 
 - ROS2 Humble
-- Webots R2023b or later
+- Webots R2023b or R2025a
 - Python 3.10+
 - Required Python packages:
   ```bash
@@ -35,7 +35,9 @@ The system consists of four main components:
 
 1. Clone the repository:
    ```bash
-   cd ~/Documents/Path_Following_Robot
+   git clone https://github.com/AbdulqadeerTHD/AI_Bases_Path_Following_Robot_ROS2_CS.git
+   cd AI_Bases_Path_Following_Robot_ROS2_CS
+   git checkout dev
    ```
 
 2. Build the workspace:
@@ -48,22 +50,59 @@ The system consists of four main components:
 
 ## Running the System
 
-### Launch the complete system:
+### Launch the complete system with new environment:
 
 ```bash
 cd ~/Documents/Path_Following_Robot/ros2_ws
 source install/setup.bash
-ros2 launch object_following_integration launch_with_camera_world.launch.py \
-    camera_topic:=/camera/image_raw \
-    target_class_name:=chair \
-    confidence_threshold:=0.3
+ros2 launch object_following_integration launch_object_following_world.launch.py \
+    target_class_name:=all \
+    confidence_threshold:=0.15
 ```
 
 ### Parameters:
 
 - `camera_topic`: Camera topic name (default: `/camera/image_raw`)
-- `target_class_name`: Target object class to detect - `chair`, `person`, `box`, etc. (default: `chair`)
-- `confidence_threshold`: YOLOv8 confidence threshold 0.0-1.0 (default: `0.4`)
+- `target_class_name`: Target object class to detect - `all`, `chair`, `person`, `bottle`, etc. (default: `all`)
+  - Use `all` to detect all COCO classes that YOLOv8 can recognize
+- `confidence_threshold`: YOLOv8 confidence threshold 0.0-1.0 (default: `0.2`)
+
+### Example: Detect specific class
+
+```bash
+ros2 launch object_following_integration launch_object_following_world.launch.py \
+    target_class_name:=chair \
+    confidence_threshold:=0.3
+```
+
+## World Environment
+
+The simulation includes:
+- **TurtleBot3 Burger** robot with camera and LiDAR
+- **Moving blue target** (automatically moves back and forth)
+- **Multiple objects**: boxes, chairs, bottles, table
+- **All objects on ground level** with realistic sizes
+- **Obstacles** for testing obstacle avoidance
+
+## Behavior Logic
+
+### SEARCH Mode:
+- Robot rotates slowly at **0.3 rad/s** when no target is visible
+- Switches to FOLLOW mode immediately when target is detected
+- Re-enters SEARCH mode if target is lost for **1.5 seconds**
+
+### FOLLOW Mode:
+- **TURNING RULES**:
+  - If `x < 0.4` → turn left (angular proportional to `(x - 0.5)`)
+  - If `x > 0.6` → turn right (angular proportional to `(x - 0.5)`)
+- **FORWARD MOTION**:
+  - If `0.4 <= x <= 0.6` → move forward at **0.15 m/s**
+  - Angular velocity proportional to `(x - 0.5)` for fine centering
+
+### Obstacle Avoidance (Highest Priority):
+- If any LiDAR scan distance < **0.30 m** → STOP immediately
+- Overrides both FOLLOW and SEARCH modes
+- Robot turns away from obstacle
 
 ## Testing Commands
 
@@ -93,29 +132,6 @@ ros2 topic echo /cmd_vel
 ros2 topic list
 ```
 
-## Current Status
-
-### Working Components:
-
-1. **Camera**: Publishing images successfully to `/camera/image_raw`
-2. **Vision Node**: Receiving images and running YOLOv8 detection
-3. **Control Node**: Publishing velocity commands continuously
-4. **BT Node**: Publishing behavior state (SEARCH/FOLLOW)
-5. **Controllers**: Successfully activated (diffdrive_controller, joint_state_broadcaster)
-6. **Robot Motion**: Commands being sent (robot rotating in SEARCH mode)
-
-### Current Issues:
-
-1. **Object Detection**: YOLOv8 is not detecting "chair" objects
-   - Status: Vision node receives images but reports "No detections"
-   - Cause: Simple box objects in world are not recognized as "chair" by YOLOv8
-   - Solution: Need actual chair-shaped objects or use different target class
-
-2. **World Objects**: Current world has simple boxes, not actual chairs
-   - Objects placed at ~2 meters distance
-   - YOLOv8 requires recognizable objects (chairs, persons, tables, etc.)
-   - Simple boxes may not be detected reliably
-
 ## Project Structure
 
 ```
@@ -130,7 +146,7 @@ ros2_ws/src/
 │   │   └── bt_node.py
 │   ├── package.xml
 │   └── setup.py
-├── object_following_control/         # PID control node
+├── object_following_control/         # Motion control node
 │   ├── object_following_control/
 │   │   └── control_node.py
 │   ├── package.xml
@@ -142,30 +158,43 @@ ros2_ws/src/
 │   └── CMakeLists.txt
 └── object_following_integration/      # Launch files and world
     ├── launch/
-    │   └── launch_with_camera_world.launch.py
+    │   ├── launch_object_following_world.launch.py  # New world launch file
+    │   └── launch_with_camera_world.launch.py       # Original launch file
     ├── worlds/
-    │   └── turtlebot3_simple_with_camera.wbt
+    │   ├── object_following_world.wbt               # New environment
+    │   ├── turtlebot3_simple_with_camera.wbt        # Original world
+    │   ├── moving_target_controller.py              # Target movement controller
+    │   └── controllers/
+    │       └── moving_target_controller/
+    │           └── moving_target_controller.py
     ├── resource/
     │   └── turtlebot_webots_with_camera.urdf
     ├── package.xml
     └── CMakeLists.txt
 ```
 
-## Control Logic
+## Features
 
-### FOLLOW Mode:
-- If target_x < 0.4 → turn left
-- If target_x > 0.6 → turn right
-- If 0.4 <= target_x <= 0.6 → go forward
-- Adjust speed based on distance (closer = slower)
+### ✅ Working Components:
 
-### SEARCH Mode:
-- Robot rotates slowly (0.3 rad/s) until object detected
-- Continues until vision node reports `found=true`
-
-### Obstacle Avoidance:
-- If LiDAR reading < 0.3m → STOP or slight turn
-- Overrides FOLLOW mode when danger detected
+1. **Camera**: Publishing images successfully to `/camera/image_raw`
+2. **Vision Node**: 
+   - Detects all COCO classes (when `target_class_name:=all`)
+   - DeepSORT tracking for object identity
+   - Handles numpy.float32 errors correctly
+3. **Behavior Tree Node**: 
+   - SEARCH/FOLLOW state management
+   - 1.5 second delay before switching to SEARCH mode
+   - State stability (no rapid switching)
+4. **Control Node**: 
+   - Exact behavior per specification
+   - Obstacle avoidance with 0.30m threshold
+   - Smooth motion control
+5. **World Environment**: 
+   - Correctly scaled objects (half-size for better detection)
+   - All objects on ground level
+   - Moving target with automatic motion
+   - Multiple detectable objects (chairs, bottles, table, boxes)
 
 ## Troubleshooting
 
@@ -175,15 +204,20 @@ ros2_ws/src/
 3. Check topic: `ros2 topic list | grep camera`
 
 ### No object detections:
-1. Verify target class is detectable by YOLOv8 (chair, person, dining table, etc.)
-2. Check if objects are visible in camera view
-3. Lower confidence threshold if needed
-4. Try different target class (e.g., `person` instead of `chair`)
+1. Use `target_class_name:=all` to detect all classes
+2. Lower confidence threshold: `confidence_threshold:=0.15`
+3. Check if objects are visible in camera view
+4. Verify YOLOv8 model is loaded (check logs)
 
 ### Robot not moving:
 1. Check controllers are activated: `ros2 control list_controllers`
 2. Verify `/cmd_vel` is publishing: `ros2 topic echo /cmd_vel`
 3. Check for controller errors in launch logs
+
+### Webots warnings:
+- **Version compatibility warnings**: Safe to ignore (forward compatibility works)
+- **Controller directory warning**: Target won't move automatically, but robot works
+- **BallJoint warning**: Safe to ignore (URDF export limitation)
 
 ## License
 
@@ -192,4 +226,3 @@ MIT
 ## Maintainers
 
 Team
-

@@ -60,30 +60,22 @@ class YOLOv8TrackerNode(Node):
         max_age = self.get_parameter('max_age').get_parameter_value().integer_value
         n_init = self.get_parameter('n_init').get_parameter_value().integer_value
         
-        # Per spec: Only detect ONE target class - "person" OR "box"
-        # But YOLOv8 detects: person, chair, dining table, bottle, backpack, suitcase, etc.
-        # "box" might not be detected - YOLOv8 uses "suitcase" or "backpack" for boxes
-        # Normalize to lowercase for matching
+        # Enable detection of ALL COCO classes that YOLOv8 can detect
+        # If "all" is specified, detect all classes
+        # Otherwise, use the specified class
         target_class = target_class_param.strip().lower()
         
-        # Map "box" to classes YOLOv8 can detect
-        if target_class == 'box':
-            # YOLOv8 doesn't have "box" class, but detects boxes as "suitcase" or "backpack"
-            # For now, let's use "chair" or "dining table" which are definitely detectable
-            self.get_logger().warn('YOLOv8 does not detect "box" class. Using "chair" instead (easily detectable).')
-            target_class = 'chair'
-        elif target_class not in ['person', 'box', 'chair', 'dining table', 'bottle', 'backpack', 'suitcase']:
-            self.get_logger().warn(f'Target class "{target_class}" might not be detectable. Using "chair" instead.')
-            target_class = 'chair'
-        
-        self.target_class = target_class  # Single target class only
-        # For "box", also check suitcase and backpack
-        if target_class == 'chair':
-            self.target_classes = ['chair']  # YOLOv8 detects "chair"
-        elif target_class == 'person':
-            self.target_classes = ['person']  # YOLOv8 detects "person"
+        # If "all" is specified, detect all COCO classes
+        if target_class == 'all':
+            # We'll detect all classes - set target_classes to None to indicate "all"
+            self.target_classes = None  # None means detect all classes
+            self.target_class = 'all'
+            self.get_logger().info('Detecting ALL COCO classes that YOLOv8 can detect')
         else:
-            self.target_classes = [target_class]  # Keep as list for compatibility with existing code
+            # Single target class mode
+            self.target_class = target_class
+            self.target_classes = [target_class]
+            self.get_logger().info(f'Detecting single target class: {target_class}')
         
         self.get_logger().info(f'Initializing YOLOv8 Tracker Node...')
         self.get_logger().info(f'Camera topic: {camera_topic}')
@@ -174,54 +166,84 @@ class YOLOv8TrackerNode(Node):
             self._image_count += 1
             # Update last image time
             self.last_image_time = self.get_clock().now()
+            # Reset the warning flag since we just received an image
+            if hasattr(self, '_image_warning_sent'):
+                self._image_warning_sent = False
             
-            if self._image_count <= 10 or self._image_count % 30 == 0:
+            if self._image_count <= 5 or self._image_count % 50 == 0:
                 self.get_logger().info(f'Received image #{self._image_count} (size: {msg.width}x{msg.height})')
             
             # Convert ROS Image message to OpenCV image (BGR format)
             cv_image = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             image_height, image_width = cv_image.shape[:2]
             
-            # Run YOLOv8 detection
-            results = self.yolo_model(cv_image, conf=self.confidence_threshold, verbose=False)
+            # Run YOLOv8 detection with lower confidence for better detection
+            # Use a slightly lower threshold to catch more objects
+            detection_threshold = max(0.1, self.confidence_threshold - 0.1)
+            results = self.yolo_model(cv_image, conf=detection_threshold, verbose=False)
             
             # Debug: Log all detected classes (first few frames)
             if not hasattr(self, '_debug_log_count'):
                 self._debug_log_count = 0
             self._debug_log_count += 1
-            if self._debug_log_count <= 5 or self._debug_log_count % 50 == 0:
-                all_classes = []
-                for r in results:
-                    for box in r.boxes:
-                        cls_id = int(box.cls[0])
+            
+            # Count all detections from YOLOv8 (before filtering)
+            all_detections = []
+            for r in results:
+                for box in r.boxes:
+                    # Handle box.cls - can be array, tensor, or scalar
+                    try:
+                        cls_value = box.cls
+                        if hasattr(cls_value, '__len__') and not isinstance(cls_value, (str, bytes)):
+                            cls_id = int(cls_value[0].cpu().numpy() if hasattr(cls_value[0], 'cpu') else cls_value[0])
+                        else:
+                            cls_id = int(cls_value.cpu().numpy() if hasattr(cls_value, 'cpu') else cls_value)
                         cls_name = self.yolo_model.names[cls_id]
-                        conf = float(box.conf[0])
-                        all_classes.append(f"{cls_name}({conf:.2f})")
-                if all_classes:
-                    self.get_logger().info(f'YOLOv8 detected: {", ".join(all_classes)}')
+                        
+                        # Handle box.conf - can be array, tensor, or scalar
+                        conf_value = box.conf
+                        if hasattr(conf_value, '__len__') and not isinstance(conf_value, (str, bytes)):
+                            conf = float(conf_value[0].cpu().numpy() if hasattr(conf_value[0], 'cpu') else conf_value[0])
+                        else:
+                            conf = float(conf_value.cpu().numpy() if hasattr(conf_value, 'cpu') else conf_value)
+                        all_detections.append(f"{cls_name}({conf:.2f})")
+                    except Exception as e:
+                        self.get_logger().debug(f'Error processing box for logging: {e}')
+                        continue
+            
+            if self._debug_log_count <= 10 or self._debug_log_count % 30 == 0:
+                if all_detections:
+                    target_info = "all classes" if self.target_classes is None else str(self.target_classes)
+                    self.get_logger().info(f'YOLOv8 detected {len(all_detections)} objects: {", ".join(all_detections[:5])}{"..." if len(all_detections) > 5 else ""} (target={target_info})')
                 else:
-                    self.get_logger().info(f'YOLOv8: No detections (target={self.target_classes})')
+                    target_info = "all classes" if self.target_classes is None else str(self.target_classes)
+                    self.get_logger().info(f'YOLOv8: No detections at all (target={target_info}, threshold={self.confidence_threshold})')
             
             # Extract detections for target classes
             detections = []
             detection_classes = []  # Store class info for each detection
             class_names = self.yolo_model.names
             
-            # Find class IDs for all target classes
-            target_class_ids = {}
-            for class_id, class_name in class_names.items():
-                class_name_lower = class_name.lower()
-                if class_name_lower in self.target_classes:
-                    target_class_ids[class_id] = class_name_lower
-            
-            if len(target_class_ids) == 0:
-                self.get_logger().warn(
-                    f'No target classes found in YOLOv8 classes. '
-                    f'Requested: {self.target_classes}, '
-                    f'Available: {list(class_names.values())}'
-                )
-                self.publish_no_detection(msg.header)
-                return
+            # If target_classes is None, detect ALL classes
+            if self.target_classes is None:
+                # Detect all classes - use all detections
+                target_class_ids = {class_id: class_name.lower() for class_id, class_name in class_names.items()}
+            else:
+                # Find class IDs for specific target classes
+                target_class_ids = {}
+                for class_id, class_name in class_names.items():
+                    class_name_lower = class_name.lower()
+                    if class_name_lower in self.target_classes:
+                        target_class_ids[class_id] = class_name_lower
+                
+                if len(target_class_ids) == 0:
+                    self.get_logger().warn(
+                        f'No target classes found in YOLOv8 classes. '
+                        f'Requested: {self.target_classes}, '
+                        f'Available: {list(class_names.values())}'
+                    )
+                    self.publish_no_detection(msg.header)
+                    return
             
             # Extract bounding boxes and confidences for target classes
             # Store detection info with bounding box for class matching
@@ -230,22 +252,50 @@ class YOLOv8TrackerNode(Node):
             for result in results:
                 boxes = result.boxes
                 for box in boxes:
-                    class_id = int(box.cls)
-                    # Check if this detection is one of the target classes
-                    if class_id in target_class_ids:
-                        target_detections_found += 1
-                        # Get bounding box coordinates (x1, y1, x2, y2)
-                        x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                        confidence = float(box.conf[0].cpu().numpy())
-                        class_name = target_class_ids[class_id]
+                    try:
+                        # Handle box.cls - it can be a tensor, array, or scalar (numpy.float32)
+                        cls_value = box.cls
+                        if hasattr(cls_value, '__len__') and not isinstance(cls_value, (str, bytes, np.floating)):
+                            # It's an array or tensor
+                            if len(cls_value) > 0:
+                                class_id = int(cls_value[0].cpu().numpy() if hasattr(cls_value[0], 'cpu') else cls_value[0])
+                            else:
+                                continue
+                        else:
+                            # It's a scalar (numpy.float32 or similar)
+                            class_id = int(cls_value.cpu().numpy() if hasattr(cls_value, 'cpu') else float(cls_value))
                         
-                        # Convert to format expected by DeepSORT: [x1, y1, x2, y2, confidence]
-                        detections.append([x1, y1, x2, y2, confidence])
-                        detection_info.append(((x1, y1, x2, y2), class_name, confidence))
+                        # Check if this detection is one of the target classes (or all if None)
+                        if class_id in target_class_ids:
+                            target_detections_found += 1
+                            # Get bounding box coordinates (x1, y1, x2, y2)
+                            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                            
+                            # Handle box.conf - it can be a tensor, array, or scalar
+                            conf_value = box.conf
+                            if hasattr(conf_value, '__len__') and not isinstance(conf_value, (str, bytes, np.floating)):
+                                # It's an array or tensor
+                                if len(conf_value) > 0:
+                                    confidence = float(conf_value[0].cpu().numpy() if hasattr(conf_value[0], 'cpu') else conf_value[0])
+                                else:
+                                    continue
+                            else:
+                                # It's a scalar (numpy.float32 or similar)
+                                confidence = float(conf_value.cpu().numpy() if hasattr(conf_value, 'cpu') else float(conf_value))
+                            
+                            class_name = target_class_ids[class_id]
+                            
+                            # Convert to format expected by DeepSORT: [x1, y1, x2, y2, confidence]
+                            detections.append([x1, y1, x2, y2, confidence])
+                            detection_info.append(((x1, y1, x2, y2), class_name, confidence))
+                    except Exception as e:
+                        self.get_logger().debug(f'Error processing detection box: {e}')
+                        continue
             
             # Log if target class detections found
             if target_detections_found > 0 and (self._debug_log_count <= 5 or self._debug_log_count % 30 == 0):
-                self.get_logger().info(f'Found {target_detections_found} target detection(s) of class: {self.target_classes}')
+                target_info = "all classes" if self.target_classes is None else str(self.target_classes)
+                self.get_logger().info(f'Found {target_detections_found} target detection(s) of class: {target_info}')
             
             # Update DeepSORT tracker with detections
             if len(detections) > 0:
@@ -438,8 +488,9 @@ class YOLOv8TrackerNode(Node):
         if not hasattr(self, '_no_detect_log_count'):
             self._no_detect_log_count = 0
         self._no_detect_log_count += 1
-        if self._no_detect_log_count <= 3 or self._no_detect_log_count % 100 == 0:
-            self.get_logger().info(f'No target detection (target={self.target_classes}) - count: {self._no_detect_log_count}')
+        if self._no_detect_log_count <= 3 or self._no_detect_log_count % 50 == 0:
+            target_info = "all classes" if self.target_classes is None else str(self.target_classes)
+            self.get_logger().info(f'No target detection (target={target_info}, threshold={self.confidence_threshold}) - count: {self._no_detect_log_count}')
         
         msg = ObjectPosition()
         msg.header = header
@@ -453,11 +504,19 @@ class YOLOv8TrackerNode(Node):
     def check_image_reception(self):
         """Check if we're receiving images from the camera"""
         if not hasattr(self, 'last_image_time') or self.last_image_time is None:
-            self.get_logger().warn('No images received yet! Check camera topic and camera enablement.')
+            if not hasattr(self, '_image_warning_sent') or not self._image_warning_sent:
+                self.get_logger().warn('No images received yet! Check camera topic and camera enablement.')
+                self._image_warning_sent = True
         else:
             time_since_last = (self.get_clock().now() - self.last_image_time).nanoseconds / 1e9
-            if time_since_last > 2.0:
-                self.get_logger().warn(f'No images received for {time_since_last:.1f}s! Camera might have stopped.')
+            # Only warn if it's been more than 5 seconds (images might come in bursts)
+            if time_since_last > 5.0:
+                if not hasattr(self, '_image_warning_sent') or not self._image_warning_sent:
+                    self.get_logger().warn(f'No images received for {time_since_last:.1f}s! Camera might have stopped.')
+                    self._image_warning_sent = True
+            else:
+                # Reset warning flag if images are coming
+                self._image_warning_sent = False
 
 
 def main(args=None):
