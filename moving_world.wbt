@@ -47,6 +47,14 @@ TurtleBot3Burger {
       name "inertial_unit"
     }
     RobotisLds01 {
+      minRange 0.12
+      maxRange 3.5
+      enablePointCloud TRUE
+      resolution 1
+      numberOfLayers 1
+      defaultFrequency 10
+      horizontalResolution 1
+      fieldOfView 6.28318
     }
     Camera {
       translation 0.1 0 0.1
@@ -61,7 +69,7 @@ TurtleBot3Burger {
   ]
 }
 Pedestrian {
-  translation 3.16999 2.91 1.37
+  translation 3.16999 2.91 1.3
   rotation 0 0 1 1.5708
   name "pedestrian(1)"
   controller "person_mover"
@@ -82,7 +90,7 @@ MazeBlock {
   length 2.1
 }
 OfficeChair {
-  translation 4.19 3.1 0
+  translation 1.9 3.9 -0.00141534
   rotation 0 0 1 3.14159
 }
 MazeBlock {
@@ -125,7 +133,7 @@ MazeBlock {
   length 2.1
 }
 Solid {
-  translation -2.71 5.48 0.15
+  translation -2.71 5.48 0.075
   children [
     Shape {
       appearance PBRAppearance {
@@ -134,13 +142,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.5 4 0.3
+        size 0.25 2 0.15
       }
     }
   ]
   name "target_table(2)"
   boundingObject Box {
-    size 0.5 0.4 0.3
+    size 0.25 0.2 0.15
   }
   physics Physics {
     density -1
@@ -148,7 +156,7 @@ Solid {
   }
 }
 Solid {
-  translation 5.24 6.15 0.15
+  translation 5.24 6.15 0.075
   children [
     Shape {
       appearance PBRAppearance {
@@ -157,13 +165,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.5 0.4 0.3
+        size 0.25 0.2 0.15
       }
     }
   ]
   name "target_table(3)"
   boundingObject Box {
-    size 0.5 0.4 0.3
+    size 0.25 0.2 0.15
   }
   physics Physics {
     density -1
@@ -171,7 +179,7 @@ Solid {
   }
 }
 Solid {
-  translation 2.51 2.43 0.15
+  translation 2.51 2.43 0.075
   children [
     Shape {
       appearance PBRAppearance {
@@ -180,13 +188,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 10 0.4 0.3
+        size 5 0.2 0.15
       }
     }
   ]
   name "target_table(1)"
   boundingObject Box {
-    size 0.5 0.4 0.3
+    size 0.25 0.2 0.15
   }
   physics Physics {
     density -1
@@ -194,7 +202,7 @@ Solid {
   }
 }
 Pedestrian {
-  translation -6.79 0 1.27
+  translation -6.79 0 1.3
   controller "person_mover"
   controllerArgs [
     ""
@@ -215,7 +223,7 @@ Pose {
   ]
 }
 Solid {
-  translation 2 0 0.3
+  translation 2 0 0.15
   children [
     Shape {
       appearance PBRAppearance {
@@ -224,13 +232,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.4 0.4 0.6
+        size 0.2 0.2 0.3
       }
     }
   ]
   name "target_chair_1"
   boundingObject Box {
-    size 0.4 0.4 0.6
+    size 0.2 0.2 0.3
   }
   physics Physics {
     density -1
@@ -238,7 +246,7 @@ Solid {
   }
 }
 Solid {
-  translation -0.987284 6.73087 0.3
+  translation -0.987284 6.73087 0.15
   rotation 0 0 1 -0.023595307179586023
   children [
     Shape {
@@ -248,13 +256,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.35 0.35 0.5
+        size 0.175 0.175 0.25
       }
     }
   ]
   name "target_chair_2"
   boundingObject Box {
-    size 0.35 0.35 0.5
+    size 0.175 0.175 0.25
   }
   physics Physics {
     density -1
@@ -262,7 +270,7 @@ Solid {
   }
 }
 Solid {
-  translation 0 -0.4 0.25
+  translation 0 -0.4 0.125
   children [
     Shape {
       appearance PBRAppearance {
@@ -271,13 +279,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.5 0.4 0.3
+        size 0.25 0.2 0.15
       }
     }
   ]
   name "target_table"
   boundingObject Box {
-    size 0.5 0.4 0.3
+    size 0.25 0.2 0.15
   }
   physics Physics {
     density -1
@@ -285,7 +293,7 @@ Solid {
   }
 }
 Solid {
-  translation 0.845739 5.29 0.3
+  translation 0.845739 5.29 0.15
   rotation 0 0 -1 -0.023595307179586023
   children [
     Shape {
@@ -295,13 +303,13 @@ Solid {
         metalness 0
       }
       geometry Box {
-        size 0.35 0.35 0.5
+        size 0.175 0.175 0.25
       }
     }
   ]
   name "target_chair_3"
   boundingObject Box {
-    size 0.35 0.35 0.5
+    size 0.175 0.175 0.25
   }
   physics Physics {
     density -1

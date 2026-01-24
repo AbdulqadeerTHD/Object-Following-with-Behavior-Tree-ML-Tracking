@@ -24,6 +24,8 @@ setup(
     entry_points={
         'console_scripts': [
             'control_node = object_following_control.control_node:main',
+            'keep_alive = object_following_control.keep_alive_node:main',
+            'teleop_recorder = object_following_control.teleop_recorder_node:main',
         ],
     },
 )

@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'yolov8_tracker = object_following_vision.yolov8_tracker_node:main',
+            'data_collector = object_following_vision.data_collector_node:main',
         ],
     },
 )
