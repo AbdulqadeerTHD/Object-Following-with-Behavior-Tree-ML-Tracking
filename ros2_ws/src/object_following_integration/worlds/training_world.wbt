@@ -1,0 +1,107 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/humans/pedestrian/protos/Pedestrian.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/samples/robotbenchmark/maze_runner/protos/MazeBlock.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/robotis/protos/RobotisLds01.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  fieldOfView 0.9
+  orientation -0.193960025622898 -0.00927081588841963 0.9809656265298635 3.0847736689828795
+  position 11.937624304748331 -0.3540188077840958 6.192415537374312
+}
+TexturedBackground {
+  texture "factory"
+}
+TexturedBackgroundLight {
+  texture "factory"
+}
+RectangleArena {
+  floorSize 20 20
+  floorAppearance Parquetry {
+    type "dark strip"
+  }
+  wallHeight 1.4
+}
+TurtleBot3Burger {
+  translation 0.0 0.0 0.0
+  rotation 0 1 0 0
+  controller "<extern>"
+  controllerArgs [
+    ""
+  ]
+  extensionSlot [
+    Solid {
+      name "imu_link"
+    }
+    GPS {
+    }
+    InertialUnit {
+      name "inertial_unit"
+    }
+    RobotisLds01 {
+      minRange 0.12
+      maxRange 3.5
+      enablePointCloud TRUE
+      resolution 1
+      numberOfLayers 1
+      defaultFrequency 10
+      horizontalResolution 1
+      fieldOfView 6.28318
+    }
+    Camera {
+      translation 0.1 0 0.1
+      rotation 0 0 1 0
+      name "camera"
+      fieldOfView 1.047
+      width 640
+      height 480
+      near 0.01
+      far 10
+    }
+  ]
+}
+Pedestrian {
+  translation 5 5 1.3
+  rotation 0 0 1 1.5708
+  name "pedestrian(1)"
+  controller "person_mover"
+  shirtColor 0.83 1 0.2
+}
+Pedestrian {
+  translation -5 -5 1.3
+  rotation 0 0 1 0
+  name "pedestrian(2)"
+  controller "person_mover"
+  shirtColor 0.86 1 1
+}
+Pedestrian {
+  translation 8 -3 1.3
+  rotation 0 0 1 1.5708
+  name "pedestrian(3)"
+  controller "person_mover"
+  shirtColor 1 0.8 0.2
+}
+MazeBlock {
+  translation 3 -3 0.01
+  name "maze block(1)"
+  length 2
+}
+MazeBlock {
+  translation -4 3 0.01
+  rotation 0 0 1 1.5708
+  name "maze block(2)"
+  length 2
+}
+MazeBlock {
+  translation 0 0 0.01
+  name "maze block(3)"
+  length 3
+}
+
