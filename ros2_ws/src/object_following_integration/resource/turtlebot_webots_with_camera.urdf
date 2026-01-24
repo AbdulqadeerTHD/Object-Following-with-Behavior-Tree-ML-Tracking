@@ -6,9 +6,12 @@
                 <enabled>true</enabled>
                 <updateRate>5</updateRate>
                 <topicName>/scan</topicName>
-                <alwaysOn>false</alwaysOn>
+                <alwaysOn>true</alwaysOn>
                 <frameName>LDS-01</frameName>
             </ros>
+            <visualization>
+                <enabled>true</enabled>
+            </visualization>
         </device>
 
         <device reference="camera" type="Camera">

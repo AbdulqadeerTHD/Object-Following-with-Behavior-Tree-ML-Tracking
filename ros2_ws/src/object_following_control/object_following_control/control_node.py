@@ -161,10 +161,10 @@ class ControlNode(Node):
         # Control loop timer (20 Hz)
         self.control_timer = self.create_timer(0.05, self.control_loop)
         
-        # Publish initial command immediately to activate controller
+        # Publish initial zero command to activate controller (stand still)
         initial_cmd = Twist()
         initial_cmd.linear.x = 0.0
-        initial_cmd.angular.z = 0.3  # Start rotating in SEARCH mode
+        initial_cmd.angular.z = 0.0  # Stand still in SEARCH mode
         self.cmd_vel_pub.publish(initial_cmd)
         self.cmd_vel_controller_pub.publish(initial_cmd)
         
@@ -172,7 +172,7 @@ class ControlNode(Node):
         self.get_logger().info(f'Max linear vel: {self.max_linear_vel} m/s')
         self.get_logger().info(f'Max angular vel: {self.max_angular_vel} rad/s')
         self.get_logger().info(f'Initial state: {self.current_behavior_state}')
-        self.get_logger().info('Published initial rotation command - robot should start rotating')
+        self.get_logger().info('Robot will stand still in SEARCH mode - ready for teleop commands')
     
     def object_position_callback(self, msg):
         """Callback for object position updates"""
@@ -317,21 +317,27 @@ class ControlNode(Node):
                     cmd_vel.angular.z = 0.0
             
             elif self.current_behavior_state == "SEARCH":
-                # SEARCH MODE: Per spec - robot rotates slowly until object detected
+                # SEARCH MODE: Stand still - wait for teleop commands or object detection
+                # Publish less frequently to allow teleop commands to take control
                 cmd_vel.linear.x = 0.0
-                cmd_vel.angular.z = 0.3  # Slow rotation (per spec)
-                # Log occasionally to verify SEARCH mode is active
+                cmd_vel.angular.z = 0.0  # No rotation - stand still
+                # Only publish occasionally (once per second) to keep controller alive
                 if not hasattr(self, '_search_log_count'):
                     self._search_log_count = 0
                 self._search_log_count += 1
-                if self._search_log_count % 20 == 0:  # Every 1 second at 20Hz
-                    self.get_logger().info(f'SEARCH mode: Rotating at {cmd_vel.angular.z} rad/s')
+                # Only publish every 20 iterations (once per second at 20Hz)
+                if self._search_log_count % 20 != 0:
+                    # Skip publishing to allow teleop commands to work
+                    return  # Don't publish, let teleop take control
+                # Log occasionally
+                if self._search_log_count % 100 == 0:  # Every 5 seconds
+                    self.get_logger().info(f'SEARCH mode: Standing still - waiting for object detection or teleop commands')
             
             else:
-                # Unknown state - default to SEARCH (rotate)
-                self.get_logger().warn(f'Unknown state: {self.current_behavior_state}, defaulting to SEARCH')
+                # Unknown state - default to standing still
+                self.get_logger().warn(f'Unknown state: {self.current_behavior_state}, defaulting to stand still')
                 cmd_vel.linear.x = 0.0
-                cmd_vel.angular.z = 0.3  # Rotate in unknown state too
+                cmd_vel.angular.z = 0.0  # Stand still
         
         # ALWAYS publish command (even if zero) to keep controller active
         self.cmd_vel_pub.publish(cmd_vel)
