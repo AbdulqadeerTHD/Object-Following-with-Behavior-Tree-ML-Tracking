@@ -190,9 +190,44 @@ The system uses a custom-trained YOLOv8 model located at:
 ros2_ws/runs/detect/person_obstacle_detector/weights/best.pt
 ```
 
-Training data is stored in `ros2_ws/training_data/` with separate folders for:
-- `person/`: Person images for training
-- `obstacles/`: Obstacle images for training
+### Training Pipeline
+
+The training pipeline consists of three stages:
+
+1. **Stage 1: Person Detection Model**
+   ```bash
+   cd ros2_ws
+   python3 train_model.py --stage 1
+   ```
+   - Trains from `yolov8n.pt` base model
+   - Uses `training_data/yolo_dataset/` (person class)
+   - Output: `runs/detect/person_obstacle_detector/weights/best.pt`
+
+2. **Stage 2: Obstacle Detection Model** (Optional)
+   ```bash
+   python3 train_model.py --stage 2
+   ```
+   - Fine-tunes from person model
+   - Uses `training_data/obstacles_dataset/` (obstacle class)
+
+3. **Stage 3: Combined Model** (Person + Obstacles)
+   ```bash
+   python3 train_model.py --stage 3
+   ```
+   - Fine-tunes from person model
+   - Uses `training_data/combined_dataset/` (both classes)
+   - Output: `runs/detect/person_obstacle_detector2/weights/best.pt`
+
+See `ros2_ws/TRAINING_GUIDE.md` for detailed training instructions.
+
+### Training Data
+
+Training data is stored in `ros2_ws/training_data/`:
+- `person/`: Raw person images
+- `obstacles/`: Raw obstacle images
+- `yolo_dataset/`: Organized person detection dataset (YOLO format)
+- `obstacles_dataset/`: Organized obstacle detection dataset
+- `combined_dataset/`: Combined person + obstacle dataset
 
 ## License
 
