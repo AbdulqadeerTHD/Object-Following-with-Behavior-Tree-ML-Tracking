@@ -2,6 +2,22 @@
 """
 Vision Node: YOLOv8 + SORT Tracker
 Detects persons and tracks IDs, publishes to /detected_persons
+
+This node performs real-time person detection and tracking:
+- YOLOv8: Custom-trained model for person detection (class 0)
+- SORT: Simple Online and Realtime Tracking algorithm for ID assignment
+- Publishes JSON-formatted detections with: id, x_center, area
+
+Detection Pipeline:
+1. Receives camera images from /camera/image_raw
+2. Runs YOLOv8 inference (confidence threshold: 0.05)
+3. Filters for person class (class 0)
+4. Updates SORT tracker to assign/maintain IDs
+5. Publishes tracked persons to /detected_persons
+
+Model Location:
+- Default: ros2_ws/runs/detect/person_obstacle_detector/weights/best.pt
+- Falls back to yolov8n.pt if custom model not found
 """
 
 import rclpy
