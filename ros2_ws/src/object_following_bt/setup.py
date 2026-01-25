@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'bt_node = object_following_bt.bt_node:main',
+            'behavior_manager = object_following_bt.behavior_manager_node:main',
         ],
     },
 )
