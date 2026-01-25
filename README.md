@@ -1,264 +1,202 @@
-# AI-Based Object Following Robot - ROS2 Project
+# Object Following Robot with Behavior Tree & ML Tracking
 
-## Project Overview
+An autonomous robot system that follows persons using YOLOv8 object detection, SORT tracking, and a behavior tree state machine. The robot can search for persons, follow them while avoiding obstacles, and re-identify lost targets.
 
-This project implements an AI-based object following robot using ROS2, YOLOv8 + DeepSORT, Behavior Trees, and PID control. The robot can detect, track, and follow target objects in a Webots simulation environment. The system supports detecting **all COCO classes** that YOLOv8 can recognize, including chairs, persons, bottles, tables, and more.
+## System Architecture
 
-## Architecture
+### ROS2 Nodes
 
-The system consists of four main components:
+The system consists of three main ROS2 nodes:
 
-1. **Vision Node** (`object_following_vision`): YOLOv8 object detection + DeepSORT tracking
-2. **Behavior Tree Node** (`object_following_bt`): High-level decision making (SEARCH/FOLLOW states)
-3. **Control Node** (`object_following_control`): Motion control with obstacle avoidance
-4. **Integration Package** (`object_following_integration`): Launch files and Webots world configuration
+1. **`vision_yolo_node`** (`object_following_vision` package)
+   - Performs person detection using YOLOv8
+   - Tracks persons across frames using SORT algorithm
+   - Publishes detected persons with unique IDs
 
-## System Topics
+2. **`behavior_manager_node`** (`object_following_bt` package)
+   - Implements state machine: SEARCH → FOLLOW → WAIT → SEARCH
+   - Manages person tracking and re-identification
+   - Publishes behavior commands
 
-- `/camera/image_raw` - Camera images from Webots
-- `/scan` - LiDAR data from Webots
-- `/object_position` - Detected object position (normalized x, y, distance)
-- `/behavior_state` - Current robot state (SEARCH or FOLLOW)
-- `/cmd_vel` - Velocity commands to robot
+3. **`controller_node`** (`object_following_control` package)
+   - Converts behavior commands to motor commands (`cmd_vel`)
+   - Implements obstacle avoidance using LiDAR
+   - Handles velocity clamping and safety limits
 
-## Prerequisites
+### ROS2 Topics
 
-- ROS2 Humble
-- Webots R2023b or R2025a
-- Python 3.10+
-- Required Python packages:
-  ```bash
-  pip install ultralytics deep-sort-realtime opencv-python numpy
-  ```
+#### Published Topics
 
-## Installation
+- **`/detected_persons`** (`std_msgs/String`)
+  - Publisher: `vision_yolo_node`
+  - Format: JSON array of person detections
+  - Fields: `id` (int), `x_center` (float), `area` (float)
+  - Frequency: ~10-30 Hz (depends on camera frame rate)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/AbdulqadeerTHD/AI_Bases_Path_Following_Robot_ROS2_CS.git
-   cd AI_Bases_Path_Following_Robot_ROS2_CS
-   git checkout dev
-   ```
+- **`/behavior_cmd`** (`std_msgs/String`)
+  - Publisher: `behavior_manager_node`
+  - Format: String command or JSON for FOLLOW
+  - Commands: `"ROTATE"`, `"STOP"`, or `{"cmd": "FOLLOW", "x": float, "area": float}`
+  - Frequency: 10 Hz
 
-2. Build the workspace:
-   ```bash
-   cd ros2_ws
-   source /opt/ros/humble/setup.bash
-   colcon build --symlink-install
-   source install/setup.bash
-   ```
+- **`/cmd_vel`** (`geometry_msgs/Twist`)
+  - Publisher: `controller_node`
+  - Format: Standard ROS2 velocity command
+  - Fields: `linear.x` (m/s), `angular.z` (rad/s)
+  - Frequency: 10 Hz
 
-## Running the System
+#### Subscribed Topics
 
-### Launch the complete system with moving world environment:
+- **`/camera/image_raw`** (`sensor_msgs/Image`)
+  - Subscriber: `vision_yolo_node`
+  - Source: Robot camera (Webots simulation)
+  - Format: RGB image (640x480)
 
-```bash
-cd ~/Documents/Path_Following_Robot/ros2_ws
-source install/setup.bash
-ros2 launch object_following_integration launch_moving_world.launch.py target_class_name:=person confidence_threshold:=0.2
-```
-
-### Parameters:
-
-- `camera_topic`: Camera topic name (default: `/camera/image_raw`)
-- `target_class_name`: Target object class to detect - `all`, `chair`, `person`, `bottle`, etc. (default: `person`)
-  - Use `all` to detect all COCO classes that YOLOv8 can recognize
-  - Use `person` for the moving world environment (recommended)
-- `confidence_threshold`: YOLOv8 confidence threshold 0.0-1.0 (default: `0.2`)
-
-### Example: Detect specific class
-
-```bash
-ros2 launch object_following_integration launch_moving_world.launch.py \
-    target_class_name:=person \
-    confidence_threshold:=0.2
-```
-
-### Alternative: Launch with original world
-
-```bash
-ros2 launch object_following_integration launch_object_following_world.launch.py \
-    target_class_name:=all \
-    confidence_threshold:=0.15
-```
-
-## World Environment
-
-### Moving World (`moving_world.wbt`) - **Recommended**
-
-The simulation includes:
-- **TurtleBot3 Burger** robot with camera and LiDAR at origin (0, 0, 0)
-- **Moving Pedestrians** (2 pedestrians with random walk behavior)
-- **Maze blocks** as obstacles arranged throughout the environment
-- **Office chairs** and **tables** as additional obstacles
-- **15x15 meter arena** with textured background
-- **All objects on ground level** with realistic sizes
-
-The pedestrians move randomly within the arena boundaries using the `person_mover` controller.
-
-### Original World (`object_following_world.wbt`)
-
-Alternative environment with:
-- **TurtleBot3 Burger** robot with camera and LiDAR
-- **Moving blue target** (automatically moves back and forth)
-- **Multiple objects**: boxes, chairs, bottles, table
-- **All objects on ground level** with realistic sizes
-- **Obstacles** for testing obstacle avoidance
+- **`/scan`** (`sensor_msgs/LaserScan`)
+  - Subscriber: `controller_node`
+  - Source: LiDAR sensor
+  - Used for: Obstacle detection and avoidance
 
 ## Behavior Logic
 
-### SEARCH Mode:
-- Robot rotates slowly at **0.3 rad/s** when no target is visible
-- Switches to FOLLOW mode immediately when target is detected
-- Re-enters SEARCH mode if target is lost for **1.5 seconds**
+### SEARCH Mode
 
-### FOLLOW Mode:
-- **TURNING RULES**:
-  - If `x < 0.4` → turn left (angular proportional to `(x - 0.5)`)
-  - If `x > 0.6` → turn right (angular proportional to `(x - 0.5)`)
-- **FORWARD MOTION**:
-  - If `0.4 <= x <= 0.6` → move forward at **0.15 m/s**
-  - Angular velocity proportional to `(x - 0.5)` for fine centering
+**Purpose**: Rotate in place to find a person
 
-### Obstacle Avoidance (Highest Priority):
-- If any LiDAR scan distance < **0.30 m** → STOP immediately
-- Overrides both FOLLOW and SEARCH modes
-- Robot turns away from obstacle
+**Behavior**:
+- Robot rotates continuously at 0.8 rad/s
+- No forward movement (`linear.x = 0.0`)
+- Monitors `/detected_persons` for new persons
+- Switches to FOLLOW mode when a new person (not in `completed_ids`) is detected
 
-## Testing Commands
+**State Transition**:
+- SEARCH → FOLLOW: When person detected with valid ID not in completed list
 
-### Check camera feed:
-```bash
-ros2 topic hz /camera/image_raw
-ros2 topic echo /camera/image_raw --once
+### FOLLOW Mode
+
+**Purpose**: Follow the detected person until very close
+
+**Behavior**:
+- Moves forward at maximum speed (0.22 m/s) when person is far
+- Adjusts angular velocity based on person's `x_center` position
+- Slows down slightly when person fills >99.8% of frame
+- Checks for obstacles using LiDAR and bypasses them
+- Tracks person using SORT ID for re-identification
+
+**Obstacle Avoidance**:
+- When obstacle detected (< 0.40m in front):
+  - Checks left/right sectors to choose bypass direction
+  - Turns at 1.5 rad/s while moving forward at 0.20 m/s
+  - Continues bypassing until obstacle cleared (> 0.60m)
+
+**Re-identification**:
+- If person temporarily lost, waits 30 cycles (~3 seconds) before switching to SEARCH
+- If same person ID detected again, continues following
+- Maintains `completed_ids` set to avoid re-following completed persons
+
+**State Transition**:
+- FOLLOW → WAIT: When person area > 306000 (99.6% of frame) consistently for 15+ seconds
+- FOLLOW → SEARCH: When person lost for >30 cycles
+
+### WAIT Mode
+
+**Purpose**: Stop and wait when person is reached
+
+**Behavior**:
+- Stops completely (`linear.x = 0.0`, `angular.z = 0.0`)
+- Waits for 5 seconds
+- Marks person ID as completed
+- Returns to SEARCH mode to find next person
+
+**State Transition**:
+- WAIT → SEARCH: After 5 seconds of waiting
+
+## Technical Details
+
+### Person Detection
+
+- **Model**: Custom trained YOLOv8 model (`person_obstacle_detector`)
+- **Confidence Threshold**: 0.05 (very low to catch all detections)
+- **Classes**: Person (class 0)
+- **Tracking**: SORT (Simple Online and Realtime Tracking)
+- **Frame Size**: 640x480 pixels
+- **Max Area**: 307200 pixels (full frame)
+
+### Obstacle Avoidance
+
+- **Sensor**: LiDAR (360° scan)
+- **Detection Sector**: Front 30-70% of scan (~144°)
+- **Obstacle Threshold**: 0.40m (40cm safety distance)
+- **Clear Threshold**: 0.60m (60cm to consider obstacle cleared)
+- **Bypass Strategy**: Turn left/right based on clearer path, continue forward
+
+### Velocity Control
+
+- **Max Linear Speed**: 0.22 m/s (TurtleBot3 Burger limit)
+- **Max Angular Speed**: 2.0 rad/s
+- **Search Rotation**: 0.8 rad/s
+- **Obstacle Bypass**: 1.5 rad/s angular, 0.20 m/s linear
+- **Close Approach**: 0.18 m/s when person fills >99.8% of frame
+
+### State Machine Parameters
+
+- **WAIT Duration**: 5.0 seconds
+- **Close Area Threshold**: 306000 pixels (99.6% of frame)
+- **Close Area Ratio**: 90% of recent measurements must exceed threshold
+- **Follow Duration Requirement**: 15.0 seconds minimum
+- **Person Lost Tolerance**: 30 cycles (~3 seconds)
+
+## File Structure
+
+```
+ros2_ws/
+├── src/
+│   ├── object_following_vision/          # Vision and detection package
+│   │   └── object_following_vision/
+│   │       └── vision_yolo_node.py       # YOLOv8 + SORT tracking
+│   ├── object_following_bt/              # Behavior tree package
+│   │   └── object_following_bt/
+│   │       └── behavior_manager_node.py # State machine logic
+│   ├── object_following_control/         # Control package
+│   │   └── object_following_control/
+│   │       └── controller_node.py        # Motor control + obstacle avoidance
+│   └── object_following_integration/      # Integration package
+│       └── launch/
+│           └── launch_3node_architecture.launch.py
+├── runs/
+│   └── detect/
+│       └── person_obstacle_detector/     # Trained YOLOv8 model
+│           └── weights/
+│               └── best.pt
+└── training_data/                         # Training dataset
+    ├── person/                           # Person images
+    └── obstacles/                        # Obstacle images
 ```
 
-### Monitor object detections:
-```bash
-ros2 topic echo /object_position
+## Dependencies
+
+- ROS2 Humble
+- Python 3.10+
+- ultralytics (YOLOv8)
+- sort-track (SORT algorithm)
+- cv_bridge
+- numpy
+- Webots (for simulation)
+
+## Model Training
+
+The system uses a custom-trained YOLOv8 model located at:
+```
+ros2_ws/runs/detect/person_obstacle_detector/weights/best.pt
 ```
 
-### Check behavior state:
-```bash
-ros2 topic echo /behavior_state
-```
-
-### Monitor robot commands:
-```bash
-ros2 topic echo /cmd_vel
-```
-
-### Check all active topics:
-```bash
-ros2 topic list
-```
-
-## Project Structure
-
-```
-ros2_ws/src/
-├── object_following_vision/          # YOLOv8 + DeepSORT vision node
-│   ├── object_following_vision/
-│   │   └── yolov8_tracker_node.py
-│   ├── package.xml
-│   └── setup.py
-├── object_following_bt/              # Behavior Tree decision node
-│   ├── object_following_bt/
-│   │   └── bt_node.py
-│   ├── package.xml
-│   └── setup.py
-├── object_following_control/         # Motion control node
-│   ├── object_following_control/
-│   │   └── control_node.py
-│   ├── package.xml
-│   └── setup.py
-├── object_following_interfaces/      # Custom ROS2 messages
-│   ├── msg/
-│   │   └── ObjectPosition.msg
-│   ├── package.xml
-│   └── CMakeLists.txt
-└── object_following_integration/      # Launch files and world
-    ├── launch/
-    │   ├── launch_moving_world.launch.py            # Moving world launch file (recommended)
-    │   ├── launch_object_following_world.launch.py   # Original world launch file
-    │   ├── launch_final_world.launch.py             # Final world launch file
-    │   └── launch_with_camera_world.launch.py       # Legacy launch file
-    ├── worlds/
-    │   ├── moving_world.wbt                         # Moving world with pedestrians (recommended)
-    │   ├── final_world.wbt                           # Final world environment
-    │   ├── object_following_world.wbt               # Original environment
-    │   ├── turtlebot3_simple_with_camera.wbt        # Simple test world
-    │   ├── protos/                                   # Pedestrian PROTO files
-    │   │   ├── Pedestrian.proto
-    │   │   └── [15 dependency PROTO files]
-    │   └── controllers/
-    │       ├── person_mover/                        # Pedestrian movement controller
-    │       │   └── person_mover.py
-    │       └── moving_target_controller/
-    │           └── moving_target_controller.py
-    ├── resource/
-    │   └── turtlebot_webots_with_camera.urdf
-    ├── package.xml
-    └── CMakeLists.txt
-```
-
-## Features
-
-### ✅ Working Components:
-
-1. **Camera**: Publishing images successfully to `/camera/image_raw`
-2. **Vision Node**: 
-   - Detects all COCO classes (when `target_class_name:=all`)
-   - DeepSORT tracking for object identity
-   - Handles numpy.float32 errors correctly
-3. **Behavior Tree Node**: 
-   - SEARCH/FOLLOW state management
-   - 1.5 second delay before switching to SEARCH mode
-   - State stability (no rapid switching)
-4. **Control Node**: 
-   - Exact behavior per specification
-   - Obstacle avoidance with 0.30m threshold
-   - Smooth motion control
-5. **World Environment**: 
-   - **Moving World**: Pedestrians with random walk behavior
-   - Correctly scaled objects (half-size for better detection)
-   - All objects on ground level
-   - Moving targets with automatic motion
-   - Multiple detectable objects (chairs, bottles, table, boxes, persons)
-   - Pedestrian PROTO files included and properly configured
-
-## Troubleshooting
-
-### Camera not publishing:
-1. Check if camera is enabled in Webots GUI
-2. Verify URDF contains camera device reference
-3. Check topic: `ros2 topic list | grep camera`
-
-### No object detections:
-1. Use `target_class_name:=all` to detect all classes
-2. Lower confidence threshold: `confidence_threshold:=0.15`
-3. Check if objects are visible in camera view
-4. Verify YOLOv8 model is loaded (check logs)
-
-### Robot not moving:
-1. Check controllers are activated: `ros2 control list_controllers`
-2. Verify `/cmd_vel` is publishing: `ros2 topic echo /cmd_vel`
-3. Check for controller errors in launch logs
-
-### Webots warnings:
-- **Version compatibility warnings**: Safe to ignore (forward compatibility works)
-- **Pedestrian PROTO errors**: If you see Pedestrian PROTO errors, ensure the `protos/` directory is installed correctly. Rebuild the package if needed.
-- **BallJoint warning**: Safe to ignore (URDF export limitation)
-
-### Pedestrians not moving:
-1. Check that `person_mover` controller is installed: `ls ros2_ws/install/object_following_integration/share/object_following_integration/worlds/controllers/person_mover/`
-2. Rebuild the package: `colcon build --packages-select object_following_integration`
-3. Verify the world file references the correct controller name
+Training data is stored in `ros2_ws/training_data/` with separate folders for:
+- `person/`: Person images for training
+- `obstacles/`: Obstacle images for training
 
 ## License
 
-MIT
+MIT License
 
-## Maintainers
+Copyright (c) 2026 AbdulqadeerTHD
 
-Team

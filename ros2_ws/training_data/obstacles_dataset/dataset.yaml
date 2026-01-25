@@ -1,0 +1,8 @@
+path: /home/abdulqadeer/Documents/Path_Following_Robot/ros2_ws/training_data/obstacles_dataset
+train: train/images
+val: val/images
+
+names:
+  0: obstacles
+
+nc: 1

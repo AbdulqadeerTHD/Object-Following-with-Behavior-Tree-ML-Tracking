@@ -1,0 +1,46 @@
+LABELING GUIDE FOR YOLOv8 TRAINING
+
+IMPORTANT: One image can contain MULTIPLE classes!
+
+If an image contains:
+- Person visible (even partially) = Put in person/ folder
+- Obstacles visible (boxes, chairs) = Also label them in annotations
+- Both person AND obstacles = Put in person/ folder, label BOTH
+
+FOLDER RULES:
+1. person/ folder:
+   - Images where person is visible (primary target)
+   - Even if obstacles are also in the frame
+   - Person is the main focus
+
+2. obstacles/ folder:
+   - Images with ONLY obstacles (no person)
+   - Use for learning obstacle shapes
+
+3. background/ folder:
+   - Empty scenes (no person, no obstacles)
+   - Helps model learn what NOT to detect
+
+ANNOTATION FORMAT (YOLO):
+Each image needs a .txt file with same name:
+  class_id center_x center_y width height
+  (all values normalized 0.0 to 1.0)
+
+Example: image.png -> image.txt
+  0 0.5 0.5 0.2 0.4    (person at center)
+  1 0.3 0.7 0.15 0.1  (obstacle on left)
+
+Class IDs:
+  0 = person
+  1 = obstacles
+  2 = background (usually no annotations needed)
+
+YOUR CASE (person behind obstacle but taller):
+- Put image in person/ folder
+- Create annotation file labeling BOTH:
+  * Person bounding box (class 0)
+  * Obstacle bounding box (class 1)
+- This teaches model to detect person even when obstacles are present
+
+
+

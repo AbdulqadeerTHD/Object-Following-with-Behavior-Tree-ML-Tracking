@@ -2,7 +2,18 @@
 """
 Behavior Manager Node: State Machine
 SEARCH → FOLLOW → WAIT → SEARCH
-Manages person IDs and avoids re-following completed persons
+
+This node implements the core behavior logic for the robot:
+- SEARCH: Rotates in place to find persons
+- FOLLOW: Follows detected person until very close
+- WAIT: Stops and waits when person is reached
+- Re-identification: Tracks person IDs using SORT and resumes following if lost
+
+Key Features:
+- State machine with three main states
+- Person ID tracking to avoid re-following completed persons
+- Re-identification logic (waits 30 cycles before giving up)
+- Area-based proximity detection (switches to WAIT when person fills 99.6% of frame)
 """
 
 import rclpy
@@ -169,21 +180,21 @@ class BehaviorManager(Node):
                 
                 # Check if area is consistently very high (close to 307200) - person fills most of frame
                 # Frame is 640x480 = 307200 pixels max
-                # Consider "very close" when area > 306500 (99.8% of frame) consistently
+                # Lower threshold to follow until very close - person fills most of frame
                 recent_areas = self._area_history[-30:] if len(self._area_history) >= 30 else self._area_history
                 if len(recent_areas) >= 10:
                     # Check if most recent areas are very high (close to max)
-                    # Higher threshold: 307000 = 99.9% of frame (person fills almost entire frame)
-                    close_area_count = sum(1 for a in recent_areas if a > 307000)  # 99.9% of frame
+                    # Higher threshold: 306000 = 99.6% of frame (person fills almost entire frame) - follow until very close
+                    close_area_count = sum(1 for a in recent_areas if a > 306000)  # 99.6% of frame
                     close_area_ratio = close_area_count / len(recent_areas)
                     
                     # Also check average area for stability
                     avg_recent_area = sum(recent_areas) / len(recent_areas)
                     
-                    # If 80% of recent measurements are > 307000 AND average is > 307000 AND followed for at least 30 seconds
-                    # This means person consistently fills almost entire frame (99.9%+) - robot is very close
-                    # Require longer follow duration to ensure robot actually moved closer
-                    if close_area_ratio > 0.8 and avg_recent_area > 307000 and follow_duration > 30.0:
+                    # If 90% of recent measurements are > 306000 AND average is > 306000 AND followed for at least 15 seconds
+                    # Higher threshold and more strict - only switch to WAIT when consistently very close
+                    # This ensures robot follows longer and moves more forward before stopping
+                    if close_area_ratio > 0.9 and avg_recent_area > 306000 and follow_duration > 15.0:
                         # Person fills almost entire frame consistently - very close
                         self.state = "WAIT"
                         self.wait_start = time.time()
@@ -205,12 +216,23 @@ class BehaviorManager(Node):
                     if self._follow_early_count % 50 == 0:  # Log every 5 seconds
                         self.get_logger().info(f'FOLLOW: Person {self.current_id}, area={area:.0f}, duration={follow_duration:.1f}s - building area history...')
             else:
-                # Person lost - return to SEARCH
-                lost_id = self.current_id
-                self.current_id = None
-                self.state = "SEARCH"
-                self.follow_start = None
-                self.get_logger().info(f'Person {lost_id} lost -> Switching to SEARCH')
+                # Person lost - wait a bit before returning to SEARCH (give time to re-detect)
+                if not hasattr(self, '_person_lost_count'):
+                    self._person_lost_count = 0
+                self._person_lost_count += 1
+                
+                # Only switch to SEARCH after person lost for multiple cycles (more tolerant)
+                if self._person_lost_count > 30:  # Wait ~3 seconds before giving up
+                    lost_id = self.current_id
+                    self.current_id = None
+                    self.state = "SEARCH"
+                    self.follow_start = None
+                    self._person_lost_count = 0
+                    self.get_logger().info(f'Person {lost_id} lost for {self._person_lost_count} cycles -> Switching to SEARCH')
+                else:
+                    # Still in FOLLOW mode, just person temporarily not detected
+                    if self._person_lost_count % 10 == 0:
+                        self.get_logger().warn(f'Person {self.current_id} temporarily not detected ({self._person_lost_count} cycles) - staying in FOLLOW mode')
         
         elif self.state == "WAIT":
             # Stop and wait for 5 seconds (as requested by user)

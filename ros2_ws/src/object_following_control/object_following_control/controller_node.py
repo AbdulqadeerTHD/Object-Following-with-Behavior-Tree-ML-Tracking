@@ -2,6 +2,23 @@
 """
 Controller Node: Converts behavior commands to cmd_vel
 Includes velocity clamping and obstacle avoidance
+
+This node translates high-level behavior commands into low-level motor commands:
+- ROTATE: Rotates in place (0.8 rad/s, no forward movement)
+- STOP: Stops completely
+- FOLLOW: Moves toward person with obstacle avoidance
+
+Obstacle Avoidance:
+- Uses LiDAR to detect obstacles in front sector (30-70% of scan)
+- Obstacle threshold: 0.40m (40cm safety distance)
+- Bypass strategy: Turns left/right based on clearer path while moving forward
+- Clear threshold: 0.60m (considers obstacle cleared)
+
+Velocity Control:
+- Maximum linear speed: 0.22 m/s (TurtleBot3 Burger limit)
+- Maximum angular speed: 2.0 rad/s
+- Proportional control for person following (angular velocity based on x_center error)
+- Speed adjustment based on person area (fill ratio)
 """
 
 import rclpy
@@ -210,29 +227,29 @@ class ControllerNode(Node):
                         
                         # Linear velocity based on area
                         # Person detected at ~307200 when filling entire frame (640x480)
-                        # Always move forward when following, speed based on distance
+                        # ALWAYS move forward aggressively - keep moving forward until very close
                         area = data.get("area", 0)
                         max_area = 307200  # 640x480 = full frame
                         
                         # Calculate how much of frame person fills (0.0 to 1.0)
                         fill_ratio = area / max_area if max_area > 0 else 0.0
                         
-                        # Always move forward when following - MAXIMUM SPEED (0.22 m/s is TurtleBot3 max)
-                        # Even when person fills most of frame, keep moving forward to get closer
-                        if fill_ratio > 0.999:
-                            # Person fills >99.9% of frame - extremely close, slow approach
-                            cmd.linear.x = 0.18  # Slow forward (almost at target)
-                        elif fill_ratio > 0.995:
-                            # Person fills 99.5-99.9% - very close, fast approach
-                            cmd.linear.x = 0.20  # Fast forward (keep moving to get closer)
-                        elif fill_ratio > 0.98:
-                            # Person fills 98-99.5% - close, maximum speed
+                        # ALWAYS move forward at maximum or high speed - follow aggressively
+                        # Only slow down when extremely close (almost filling entire frame)
+                        if fill_ratio > 0.998:
+                            # Person fills >99.8% of frame - extremely close, slow down slightly but keep moving
+                            cmd.linear.x = 0.18  # Still move forward (almost at target)
+                        elif fill_ratio > 0.99:
+                            # Person fills 99-99.8% - very close, keep moving forward fast
+                            cmd.linear.x = 0.22  # Maximum forward speed (keep moving forward)
+                        elif fill_ratio > 0.95:
+                            # Person fills 95-99% - close, maximum speed
                             cmd.linear.x = 0.22  # Maximum forward speed
-                        elif fill_ratio > 0.90:
-                            # Person fills 90-98% - medium distance, maximum speed
+                        elif fill_ratio > 0.80:
+                            # Person fills 80-95% - medium distance, maximum speed
                             cmd.linear.x = 0.22  # Maximum forward speed
                         else:
-                            # Person fills <90% - far away, maximum speed
+                            # Person fills <80% - far away, maximum speed
                             cmd.linear.x = 0.22  # Maximum forward speed
                         
                         # Log occasionally
