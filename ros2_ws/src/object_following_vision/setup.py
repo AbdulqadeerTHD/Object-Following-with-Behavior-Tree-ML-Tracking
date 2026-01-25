@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'yolov8_tracker = object_following_vision.yolov8_tracker_node:main',
             'data_collector = object_following_vision.data_collector_node:main',
+            'vision_yolo = object_following_vision.vision_yolo_node:main',
         ],
     },
 )
