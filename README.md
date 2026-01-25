@@ -2,6 +2,12 @@
 
 An autonomous robot system that follows persons using YOLOv8 object detection, SORT tracking, and a behavior tree state machine. The robot can search for persons, follow them while avoiding obstacles, and re-identify lost targets.
 
+## Demo Video
+
+[Demo video link will be added here]
+
+*Note: Demo video showing the robot in action - searching for persons, following them, avoiding obstacles, and re-identifying lost targets.*
+
 ## System Architecture
 
 ### ROS2 Nodes
