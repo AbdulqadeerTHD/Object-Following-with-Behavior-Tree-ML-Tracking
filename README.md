@@ -4,9 +4,7 @@ An autonomous robot system that follows persons using YOLOv8 object detection, S
 
 ## Demo Video
 
-[Demo video link will be added here]
-
-*Note: Demo video showing the robot in action - searching for persons, following them, avoiding obstacles, and re-identifying lost targets.*
+https://github.com/AbdulqadeerTHD/Object-Following-with-Behavior-Tree-ML-Tracking/issues/1#issue-3855513141
 
 ## System Architecture
 
