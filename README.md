@@ -4,7 +4,12 @@ An autonomous robot system that follows persons using YOLOv8 object detection, S
 
 ## Demo Video
 
-https://github.com/AbdulqadeerTHD/Object-Following-with-Behavior-Tree-ML-Tracking/issues/1#issue-3855513141
+## Demo Video
+
+<video width="700" controls>
+  <source src="Demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## System Architecture
 
