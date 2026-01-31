@@ -181,18 +181,6 @@ The system relies on the following primary software components:
 
 ---
 
-## Reproducibility and Documentation
-
-This repository includes structured documentation describing:
-- System architecture and package organization  
-- Workspace layout and build workflow  
-- Execution sequence and runtime behavior  
-- Configuration and adaptation guidelines  
-
-This documentation is intended to support independent system setup and execution within a compatible development environment by following the information provided in this repository.
-
----
-
 ## Deployment Considerations
 
 Although the system is validated primarily within a simulated environment, the modular software architecture is designed to support transition to physical robotic platforms. Deployment on real hardware may require additional platform-specific configuration, including sensor driver integration, specific data training as per real Environment, parameter tuning, and safety validation procedures.
