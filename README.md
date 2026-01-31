@@ -23,8 +23,7 @@ The system demonstrates real-time performance with detection rates between 10 an
 11. Installation and Usage Guide  
 12. File Structure  
 13. Model Training Pipeline  
-14. Dependencies  
-15. References  
+14. Dependencies 
 
 ---
 
@@ -271,8 +270,7 @@ SORT uses the following stages:
 ---
 
 ## 9. Future Work
-
-- Deployment on physical TurtleBot3 hardware  
+  
 - Multi-target following capability  
 - Integration of global path planning algorithms (A*, RRT)  
 - Sensor fusion between vision and LiDAR  
