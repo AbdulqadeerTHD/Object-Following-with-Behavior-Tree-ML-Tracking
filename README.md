@@ -366,38 +366,13 @@ This design enables the system to be adapted to different simulation scenarios, 
 
 ---
 
-### Documentation and Reproducibility
-
-The repository includes a detailed README file that provides:
-- An overview of system purpose and architectural design  
-- Description of workspace structure and package relationships  
-- Guidelines for environment preparation and dependency management  
-- Instructions for system initialization and runtime execution  
-- Notes on configuration, adaptation, and validation procedures  
-
-This documentation is intended to be sufficiently detailed to allow a third party to set up and execute the system in a compatible development environment by following the instructions provided, without requiring direct developer support.
-
----
-
-### Deployment and Platform Transition Considerations
-
+### 12. Deployment Considerations
 Although the system is primarily validated within the Webots simulation environment, the modular software architecture is designed to support deployment on physical robotic platforms. Transitioning to real-world hardware may require additional integration steps, including:
 - Hardware-specific sensor and actuator drivers  
 - Platform-dependent control parameter tuning  
 - Sensor calibration and safety validation procedures  
 
 The clear separation between perception, behavior, and control subsystems supports incremental testing, validation, and deployment across both simulated and physical environments.
-
----
-
-*End of Repository Access, Installation, and System Deployment Section*
-
-
-### 12. Deployment Considerations
-
-While the system is primarily validated in a simulated environment, the overall architecture is designed to be transferable to physical robotic platforms. Deployment in real-world settings may require additional steps, including hardware-specific drivers, sensor calibration, and platform-dependent safety configurations.
-
-The modular structure of the system facilitates incremental integration and testing across different environments without requiring fundamental changes to the system architecture.
 
 ros2_ws/
 ├── src/
