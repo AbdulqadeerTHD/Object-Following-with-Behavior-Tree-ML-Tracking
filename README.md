@@ -6,8 +6,6 @@
 
 The complete implementation of this project, including source code, configuration files, trained model artifacts, and simulation assets, is maintained in a publicly accessible GitHub repository.
 
-**Repository Link:**  
-https://github.com/AbdulqadeerTHD/Object-Following-with-Behavior-Tree-ML-Tracking
 
 This repository serves as the primary reference for system structure, package organization, and execution workflow. All components required for system setup and operation are provided within this repository.
 
@@ -306,7 +304,3 @@ System operation is initiated through a centralized launch interface that coordi
 The primary launch configuration for this system is located within the system integration package and is designed to be invoked from the workspace environment after successful compilation.
 
 ---
-
-
-=======
-MIT License
