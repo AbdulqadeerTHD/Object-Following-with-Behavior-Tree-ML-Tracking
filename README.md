@@ -339,6 +339,7 @@ Adjustments to these parameters allow the system to be adapted to different simu
 While the system is primarily validated in a simulated environment, the overall architecture is designed to be transferable to physical robotic platforms. Deployment in real-world settings may require additional steps, including hardware-specific drivers, sensor calibration, and platform-dependent safety configurations.
 
 The modular structure of the system facilitates incremental integration and testing across different environments without requiring fundamental changes to the system architecture.
+
 ros2_ws/
 ├── src/
 │   ├── object_following_vision/
@@ -354,6 +355,7 @@ ros2_ws/
     ├── person/
     ├── obstacles/
     └── combined_dataset/
+
 ### 13. Model Training Pipeline
 
 Base Model
