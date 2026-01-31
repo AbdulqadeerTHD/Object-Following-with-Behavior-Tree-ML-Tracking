@@ -35,6 +35,40 @@ The system is organized into three primary ROS2 nodes:
 
 These subsystems communicate through standardized ROS2 topics to maintain a continuous perception–decision–action pipeline.
 
+### ROS2 Topics
+
+#### Published Topics
+
+- **`/detected_persons`** (`std_msgs/String`)
+  - Publisher: `vision_yolo_node`
+  - Format: JSON array of person detections
+  - Fields: `id` (int), `x_center` (float), `area` (float)
+  - Frequency: ~10-30 Hz (depends on camera frame rate)
+
+- **`/behavior_cmd`** (`std_msgs/String`)
+  - Publisher: `behavior_manager_node`
+  - Format: String command or JSON for FOLLOW
+  - Commands: `"ROTATE"`, `"STOP"`, or `{"cmd": "FOLLOW", "x": float, "area": float}`
+  - Frequency: 10 Hz
+
+- **`/cmd_vel`** (`geometry_msgs/Twist`)
+  - Publisher: `controller_node`
+  - Format: Standard ROS2 velocity command
+  - Fields: `linear.x` (m/s), `angular.z` (rad/s)
+  - Frequency: 10 Hz
+
+#### Subscribed Topics
+
+- **`/camera/image_raw`** (`sensor_msgs/Image`)
+  - Subscriber: `vision_yolo_node`
+  - Source: Robot camera (Webots simulation)
+  - Format: RGB image (640x480)
+
+- **`/scan`** (`sensor_msgs/LaserScan`)
+  - Subscriber: `controller_node`
+  - Source: LiDAR sensor
+  - Used for: Obstacle detection and avoidance
+
 ---
 
 ## System Requirements
@@ -48,32 +82,33 @@ A typical runtime environment includes:
 - Standard numerical and computer vision libraries for machine learning inference and sensor processing  
 - Sufficient computational resources to support real-time perception and control workloads  
 
----
+## File Structure
 
-## Workspace Structure
-
-The project follows a modular ROS2 workspace layout in which system functionality is divided into independent packages representing perception, behavior management, control, and system integration.
-
-A typical workspace structure is as follows:
-
+```
 ros2_ws/
 ├── src/
-│ ├── object_following_vision/
-│ ├── object_following_bt/
-│ ├── object_following_control/
-│ └── object_following_integration/
+│   ├── object_following_vision/          # Vision and detection package
+│   │   └── object_following_vision/
+│   │       └── vision_yolo_node.py       # YOLOv8 + SORT tracking
+│   ├── object_following_bt/              # Behavior tree package
+│   │   └── object_following_bt/
+│   │       └── behavior_manager_node.py # State machine logic
+│   ├── object_following_control/         # Control package
+│   │   └── object_following_control/
+│   │       └── controller_node.py        # Motor control + obstacle avoidance
+│   └── object_following_integration/      # Integration package
+│       └── launch/
+│           └── launch_3node_architecture.launch.py
 ├── runs/
-│ └── detect/
-│ └── person_obstacle_detector/
-│ └── weights/
-│ └── best.pt
-└── training_data/
-├── person/
-├── obstacles/
-└── combined_dataset/
+│   └── detect/
+│       └── person_obstacle_detector/     # Trained YOLOv8 model
+│           └── weights/
+│               └── best.pt
+└── training_data/                         # Training dataset
+    ├── person/                           # Person images
+    └── obstacles/                        # Obstacle images
+```
 
-
----
 
 ## Installation and Environment Preparation
 
