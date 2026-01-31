@@ -287,52 +287,111 @@ The system achieves reliable perception, stable tracking, intelligent decision-m
 
 ---
 
-## 11. Installation and Implementation Overview
+## 11. Repository Access, Installation, and System Deployment
 
-### System Requirements
+### Project Repository
 
-The system is designed to operate within a Linux-based robotics development environment that supports modern ROS2 distributions and simulation platforms. The software stack assumes access to a compatible Python runtime, GPU acceleration (optional), and sufficient computational resources to support real-time perception and control processes.
+The complete source code, system configuration files, trained model artifacts, and supporting documentation for this project are maintained in a publicly accessible, version-controlled GitHub repository. This repository serves as the authoritative reference for system architecture, package organization, and execution workflow.
 
-A full deployment environment typically includes:
-- A ROS2-compatible operating system distribution
-- A supported simulation framework for robotic modeling and sensor emulation
-- A Python-based machine learning runtime environment
-- Standard robotics middleware and vision processing libraries
+The repository includes:
+- All ROS2 packages associated with perception, behavior management, and robot control  
+- Webots simulation assets, including world files and robot configuration resources  
+- Launch and runtime configuration files for coordinated system initialization  
+- Trained model weights and supporting training outputs  
+- A comprehensive README file describing system setup and execution  
 
-### Installation Overview
+A direct link to the repository is provided below and has also been shared separately for independent access:
 
-The installation process follows a conventional ROS2 workspace structure and involves integrating multiple software packages into a unified development environment. The workflow generally consists of:
+**Repository:**  
+<Path_Following_Robot – GitHub Repository URL>
 
-1. Initializing a ROS2 workspace structure suitable for modular package development  
-2. Integrating the system’s perception, behavior, and control packages into the workspace  
-3. Resolving external library and framework dependencies  
-4. Building the workspace using a ROS2-compatible build system  
-5. Configuring environment variables and runtime paths for package discovery  
+The repository is structured to provide sufficient clarity and documentation to enable independent system setup, execution, and evaluation within a compatible development environment.
 
-Specific implementation details, such as versioning, system paths, and build configurations, may vary depending on the host system, simulation platform, and ROS2 distribution in use.
+---
 
-### Implementation Workflow
+### System Environment and Software Requirements
 
-The system is implemented as a distributed set of ROS2 nodes that communicate through standardized message-passing interfaces. Each node is designed to operate independently while contributing to the overall perception–decision–action pipeline.
+The system is designed to operate within a Linux-based robotics development framework that supports ROS2 middleware and simulation-driven robotic modeling using Webots. The runtime environment assumes access to a Python-based machine learning stack and standard robotics software libraries for vision processing, numerical computation, and inter-process communication.
 
-A typical execution workflow involves:
+A typical deployment environment includes:
+- A ROS2-compatible operating system and middleware distribution (e.g., ROS2 Humble)  
+- The Webots robotics simulator for virtual robot and sensor modeling  
+- A Python runtime environment for perception, tracking, and behavior management modules  
+- Standard numerical and computer vision libraries for image processing and inference  
+- Adequate computational resources to support real-time perception and control pipelines  
 
-- Initializing the simulation environment and robotic model  
-- Launching the ROS2 middleware layer and associated runtime services  
-- Activating the perception pipeline for visual and sensor-based input processing  
-- Enabling the behavior management system for state-based decision-making  
-- Running the control subsystem to translate high-level commands into robot motion  
+The architecture is designed to remain portable across both simulated and physical robotic platforms, with platform-specific adaptations primarily limited to sensor drivers, communication interfaces, and control parameters.
 
-### Runtime Configuration
+---
 
-Runtime behavior can be influenced through a combination of configuration files, launch parameters, and internal node settings. These parameters affect:
+### Workspace Organization and Integration
 
-- Sensor input sources and data rates  
-- Model selection and inference thresholds  
-- State transition timing and behavior constraints  
-- Control gains and safety limits  
+The project follows a modular ROS2 workspace structure in which system functionality is divided into independent packages corresponding to perception, behavior planning, control, and system integration.
 
-Adjustments to these parameters allow the system to be adapted to different simulation scenarios, performance requirements, and computational environments.
+The general implementation process involves:
+- Initializing a ROS2-compatible workspace structure  
+- Integrating the project repository into the workspace source directory  
+- Resolving external software and library dependencies  
+- Building the workspace using a supported ROS2 build system  
+- Configuring runtime environment variables to enable package discovery and execution  
+
+This modular organization supports independent development and testing of individual subsystems while preserving a unified execution framework.
+
+---
+
+### Simulation and Execution Workflow
+
+System execution is coordinated through a centralized launch interface that initializes the Webots simulation environment, ROS2 communication layer, and application-level nodes in a synchronized manner.
+
+A typical execution workflow includes:
+- Initializing the Webots simulation environment and robotic platform model  
+- Establishing ROS2 middleware services and topic interfaces  
+- Activating the perception subsystem for camera-based detection and multi-object tracking  
+- Enabling the behavior management subsystem for state-based decision-making  
+- Launching the control subsystem for motion execution and safety enforcement  
+
+These subsystems operate concurrently and communicate through standardized ROS2 messaging interfaces to maintain a continuous perception–decision–action pipeline throughout system operation.
+
+---
+
+### Runtime Configuration and Adaptability
+
+System behavior is governed through a combination of configuration files, launch parameters, and internal node-level settings. These mechanisms influence key operational characteristics, including:
+- Sensor input sources and update rates within the Webots simulation environment  
+- Detection confidence thresholds and tracking persistence parameters  
+- State transition timing and behavioral completion criteria  
+- Motion control gains, velocity limits, and obstacle safety thresholds  
+
+This design enables the system to be adapted to different simulation scenarios, computational platforms, and experimental objectives without requiring structural modifications to the core architecture.
+
+---
+
+### Documentation and Reproducibility
+
+The repository includes a detailed README file that provides:
+- An overview of system purpose and architectural design  
+- Description of workspace structure and package relationships  
+- Guidelines for environment preparation and dependency management  
+- Instructions for system initialization and runtime execution  
+- Notes on configuration, adaptation, and validation procedures  
+
+This documentation is intended to be sufficiently detailed to allow a third party to set up and execute the system in a compatible development environment by following the instructions provided, without requiring direct developer support.
+
+---
+
+### Deployment and Platform Transition Considerations
+
+Although the system is primarily validated within the Webots simulation environment, the modular software architecture is designed to support deployment on physical robotic platforms. Transitioning to real-world hardware may require additional integration steps, including:
+- Hardware-specific sensor and actuator drivers  
+- Platform-dependent control parameter tuning  
+- Sensor calibration and safety validation procedures  
+
+The clear separation between perception, behavior, and control subsystems supports incremental testing, validation, and deployment across both simulated and physical environments.
+
+---
+
+*End of Repository Access, Installation, and System Deployment Section*
+
 
 ### 12. Deployment Considerations
 
